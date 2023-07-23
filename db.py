@@ -2,8 +2,8 @@ import sqlite3
 
 
 class SQL():
-    def __init__(self, name = 'data.db') -> None:
-        conn = sqlite3.connect(name)
+    def __init__(self) -> None:
+        conn = sqlite3.connect('data.db')
         cur = conn.cursor()
         cur.execute("""CREATE TABLE IF NOT EXISTS students(
         discord_id INT,
@@ -14,10 +14,12 @@ class SQL():
         """)
         conn.commit()
         cur.execute("""CREATE TABLE IF NOT EXISTS groups(
-        channel_id INT,
+        role_id INT,
         days TEXT,
         start_time TEXT,
-        end_time TEXT
+        end_time TEXT,
+        voice_chat_id INT,
+        text_chat_id INT
         );
         """)
         conn.commit()
@@ -31,30 +33,138 @@ class SQL():
         """)
         conn.commit()
 
-        cur.execute("INSERT INTO groups VALUES(?, ?, ?, ?);", (1119554223579873310, 'saturday', '12:00', '14:00'))
-        conn.commit()
+        # cur.execute("INSERT INTO groups VALUES(?, ?, ?, ?, ?, ?);", (1119554223579873310, 'saturday', '12:00', '14:00', 1119555115691548722, 1119555041230069760))
+        # conn.commit()
 
-        cur.execute("INSERT INTO groups VALUES(?, ?, ?, ?);", (1119556931296698539, 'saturday', '14:00', '16:00'))
-        conn.commit()
+        # cur.execute("INSERT INTO groups VALUES(?, ?, ?, ?, ?, ?);", (1119556931296698539, 'saturday', '14:00', '16:00', 1119556186421866566, 1119556008252035143))
+        # conn.commit()
 
-        cur.execute("INSERT INTO groups VALUES(?, ?, ?, ?);", (1119557155801026622, 'monday, thursday', '11:00', '12:00'))
-        conn.commit()
+        # cur.execute("INSERT INTO groups VALUES(?, ?, ?, ?, ?, ?);", (1119557155801026622, 'monday, thursday', '11:00', '12:00', 1119562226299318303, 1119562137170366474))
+        # conn.commit()
 
-        cur.execute("INSERT INTO groups VALUES(?, ?, ?, ?);", (1119557293596479559, 'monday, wednesday', '17:00', '18:00'))
-        conn.commit()
+        # cur.execute("INSERT INTO groups VALUES(?, ?, ?, ?, ?, ?);", (1119557293596479559, 'monday, wednesday', '17:00', '18:00', 1119562492260134922, 1119562433133023282))
+        # conn.commit()
 
-        cur.execute("INSERT INTO groups VALUES(?, ?, ?, ?);", (1119557472559042620, 'monday, wednesday', '18:00', '19:00'))
-        conn.commit()
+        # cur.execute("INSERT INTO groups VALUES(?, ?, ?, ?, ?, ?);", (1119557472559042620, 'monday, wednesday', '18:00', '19:00', 1122905299423072368, 1122905860188950619))
+        # conn.commit()
 
-        cur.execute("INSERT INTO groups VALUES(?, ?, ?, ?);", (1119557596907577404, 'monday, wednesday', '19:00', '20:00'))
-        conn.commit()
+        # cur.execute("INSERT INTO groups VALUES(?, ?, ?, ?, ?, ?);", (1119557596907577404, 'monday, wednesday', '19:00', '20:00', 1120389836730286110, 1120389774243549247))
+        # conn.commit()
 
-        cur.execute("INSERT INTO groups VALUES(?, ?, ?, ?);", (1119557679505997944, 'tuesday, thursday', '18:00', '19:00'))
-        conn.commit()
+        # cur.execute("INSERT INTO groups VALUES(?, ?, ?, ?, ?, ?);", (1119557679505997944, 'tuesday, thursday', '18:00', '19:00', 1120730337044090890, 1120730234388484136))
+        # conn.commit()
 
-        cur.execute("INSERT INTO groups VALUES(?, ?, ?, ?);", (1119557752419794964, 'tuesday, thursday', '19:00', '20:00'))
-        conn.commit()
+        # cur.execute("INSERT INTO groups VALUES(?, ?, ?, ?, ?, ?);", (1119557752419794964, 'tuesday, thursday', '19:00', '20:00', 1120745828504567939, 1120745752755445810))
+        # conn.commit()
 
-        cur.execute("INSERT INTO groups VALUES(?, ?, ?, ?);", (1119557849857667202, 'wednesday, friday', '16:00', '17:00'))
+        # cur.execute("INSERT INTO groups VALUES(?, ?, ?, ?, ?, ?);", (1119557849857667202, 'wednesday, friday', '16:00', '17:00', 1121063191481421904, 1121063123391098991))
+        # conn.commit()
+
+        # Test
+        # cur.execute("INSERT INTO groups VALUES(?, ?, ?, ?, ?, ?);", (1119557596907577404, 'sunday', '09:25', '11:00', 1120389836730286110, 1120389774243549247))
+        # conn.commit()
+        conn.close()
+
+    def get_all_students(self) -> list:
+        conn = sqlite3.connect('data.db')
+        cur = conn.cursor()
+        cur.execute("SELECT * FROM students")
+        students = cur.fetchall()
+        students_data = []
+        conn.close()
+        for student in students:
+            students_data.append(
+                {
+                    'discord_id': student[0],
+                    'name': student[1],
+                    'group_id': student[2],
+                    'dvmn_link': student[3],
+                    'skips': student[4]
+                }
+            )
+        return students_data
+
+
+    def get_student(self, discord_id: int) -> dict:
+        conn = sqlite3.connect('data.db')
+        cur = conn.cursor()
+        cur.execute(f"SELECT * FROM students where discord_id={discord_id}")
+        student = cur.fetchone()
+        conn.close()
+        return {
+                    'discord_id': student[0],
+                    'name': student[1],
+                    'group_id': student[2],
+                    'dvmn_link': student[3],
+                    'skips': student[4]
+        }
+
+    def update_student_skips(self, skips: int, discord_id: int) -> None:
+        conn = sqlite3.connect('data.db')
+        cur = conn.cursor()
+        cur.execute(
+        f"UPDATE students SET skips = ? WHERE discord_id = {discord_id}",
+        (skips)
+        )
+
+    def get_all_students_for_group(self, group_id) -> list:
+        conn = sqlite3.connect('data.db')
+        cur = conn.cursor()
+        cur.execute(f"SELECT * FROM students where group_id={group_id}")
+        students = cur.fetchall()
+        students_data = []
+        conn.close()
+        for student in students:
+            students_data.append(
+                {
+                    'discord_id': student[0],
+                    'name': student[1],
+                    'group_id': student[2],
+                    'dvmn_link': student[3],
+                    'skips': student[4]
+                }
+            )
+        return students_data
+
+    def get_all_students_ids(self) -> list:
+        conn = sqlite3.connect('data.db')
+        cur = conn.cursor()
+        cur.execute("SELECT * FROM students")
+        otv = [i[0] for i in cur.fetchall()]
+        conn.close()
+        return otv
+
+    def add_student(self, about_user):
+        conn = sqlite3.connect('data.db')
+        cur = conn.cursor()
+        cur.execute("INSERT INTO students VALUES(?, ?, ?, ?, ?);", about_user)
         conn.commit()
         conn.close()
+
+    def get_all_groups(self) -> list:
+        conn = sqlite3.connect('data.db')
+        cur = conn.cursor()
+        cur.execute("SELECT * FROM groups")
+        groups = cur.fetchall()
+        groups_data = []
+        conn.close()
+        for group in groups:
+            groups_data.append(
+                {
+                    'role_id': group[0],
+                    'days': group[1],
+                    'start_time': group[2],
+                    'end_time': group[3],
+                    'voice_chat_id': group[4],
+                    'channel_id': group[5]
+                }
+            )
+        return groups_data
+
+    def get_all_groups_ids(self) -> list:
+        conn = sqlite3.connect('data.db')
+        cur = conn.cursor()
+        cur.execute("SELECT * FROM groups")
+        otv = [i[0] for i in cur.fetchall()]
+        conn.close()
+        return otv
