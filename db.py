@@ -8,7 +8,7 @@ class SQL():
         cur.execute("""CREATE TABLE IF NOT EXISTS students(
         discord_id INT,
         name TEXT,
-        group_id INT,
+        role_id INT,
         dvmn_link TEXT,
         skips INT);
         """)
@@ -25,10 +25,11 @@ class SQL():
         conn.commit()
         cur.execute("""CREATE TABLE IF NOT EXISTS working_of(
         student_id INT,
-        group_id INT,
+        role_id INT,
         date TEXT,
         start_time TEXT,
-        end_time TEXT
+        end_time TEXT,
+        student_visit BOOL
         );
         """)
         conn.commit()
@@ -61,10 +62,13 @@ class SQL():
         # conn.commit()
 
         # Test
-        # cur.execute("INSERT INTO groups VALUES(?, ?, ?, ?, ?, ?);", (1119557596907577404, 'sunday', '09:25', '11:00', 1120389836730286110, 1120389774243549247))
+        # cur.execute("INSERT INTO groups VALUES(?, ?, ?, ?, ?, ?);", (1119557596907577404, 'monday, sunday', '09:26', '11:00', 1120389836730286110, 1120389774243549247))
+        # conn.commit()
+        # cur.execute("INSERT INTO groups VALUES(?, ?, ?, ?, ?, ?);", (1132589392079355904, 'sunday', '09:25', '11:00', 1126820305923493888, 1119576448064294972))
         # conn.commit()
         conn.close()
 
+    # Students
     def get_all_students(self) -> list:
         conn = sqlite3.connect('data.db')
         cur = conn.cursor()
@@ -77,7 +81,7 @@ class SQL():
                 {
                     'discord_id': student[0],
                     'name': student[1],
-                    'group_id': student[2],
+                    'role_id': student[2],
                     'dvmn_link': student[3],
                     'skips': student[4]
                 }
@@ -94,7 +98,7 @@ class SQL():
         return {
                     'discord_id': student[0],
                     'name': student[1],
-                    'group_id': student[2],
+                    'role_id': student[2],
                     'dvmn_link': student[3],
                     'skips': student[4]
         }
@@ -103,14 +107,15 @@ class SQL():
         conn = sqlite3.connect('data.db')
         cur = conn.cursor()
         cur.execute(
-        f"UPDATE students SET skips = ? WHERE discord_id = {discord_id}",
-        (skips)
+        f"UPDATE students SET skips = {skips} WHERE discord_id = {discord_id}"
         )
+        conn.commit()
+        conn.close()
 
-    def get_all_students_for_group(self, group_id) -> list:
+    def get_all_students_for_group(self, role_id) -> list:
         conn = sqlite3.connect('data.db')
         cur = conn.cursor()
-        cur.execute(f"SELECT * FROM students where group_id={group_id}")
+        cur.execute(f"SELECT * FROM students where role_id={role_id}")
         students = cur.fetchall()
         students_data = []
         conn.close()
@@ -119,7 +124,7 @@ class SQL():
                 {
                     'discord_id': student[0],
                     'name': student[1],
-                    'group_id': student[2],
+                    'role_id': student[2],
                     'dvmn_link': student[3],
                     'skips': student[4]
                 }
@@ -141,6 +146,7 @@ class SQL():
         conn.commit()
         conn.close()
 
+    # Groups
     def get_all_groups(self) -> list:
         conn = sqlite3.connect('data.db')
         cur = conn.cursor()
@@ -168,3 +174,37 @@ class SQL():
         otv = [i[0] for i in cur.fetchall()]
         conn.close()
         return otv
+
+    def get_free_groups_for_working_of(self, discord_id):
+        conn = sqlite3.connect('data.db')
+        cur = conn.cursor()
+        cur.execute(f"SELECT * FROM students WHERE discord_id = {discord_id}")
+        student = cur.fetchone()
+        cur = conn.cursor()
+        cur.execute("SELECT * FROM groups")
+        groups = cur.fetchall()
+        otv = []
+        for group in groups:
+            cur = conn.cursor()
+            cur.execute(f"SELECT * FROM students WHERE role_id = {group[0]}")
+            students_in_group = len(cur.fetchall())
+            cur = conn.cursor()
+            cur.execute(f"SELECT * FROM working_of WHERE role_id = {group[0]}")
+            working_of_group = len(cur.fetchall())
+            if working_of_group + students_in_group <= 4 and group[0] != student[2]:
+                otv.append(
+                    {
+                        'role_id': group[0],
+                        'days': group[1],
+                        'start_time': group[2],
+                        'end_time': group[3],
+                        'voice_chat_id': group[4],
+                        'channel_id': group[5]
+                    }
+                )
+        conn.close()
+        return otv
+
+    #Working_of
+    def create_working_of(self, discord_id, role_id, start_time, end_time):
+        
