@@ -33,7 +33,7 @@ class SQL():
         );
         """)
         conn.commit()
-
+        ## Данные о группах
         # cur.execute("INSERT INTO groups VALUES(?, ?, ?, ?, ?, ?);", (1119554223579873310, 'saturday', '12:00', '14:00', 1119555115691548722, 1119555041230069760))
         # conn.commit()
 
@@ -61,7 +61,7 @@ class SQL():
         # cur.execute("INSERT INTO groups VALUES(?, ?, ?, ?, ?, ?);", (1119557849857667202, 'wednesday, friday', '16:00', '17:00', 1121063191481421904, 1121063123391098991))
         # conn.commit()
 
-        # Test
+        ## Test
         # cur.execute("INSERT INTO groups VALUES(?, ?, ?, ?, ?, ?);", (1119557596907577404, 'monday, saturday, sunday', '09:26', '11:00', 1120389836730286110, 1120389774243549247))
         # conn.commit()
         # cur.execute("INSERT INTO groups VALUES(?, ?, ?, ?, ?, ?);", (1132589392079355904, 'saturday, sunday, monday, tuesday, wednesday, thursday', '20:06', '20:08', 1126820305923493888, 1119576448064294972))
@@ -112,7 +112,7 @@ class SQL():
         conn.commit()
         conn.close()
 
-    def get_all_students_for_group(self, role_id) -> list:
+    def get_all_students_for_group(self, role_id: int) -> list:
         conn = sqlite3.connect('data.db')
         cur = conn.cursor()
         cur.execute(f"SELECT * FROM students where role_id={role_id}")
@@ -139,14 +139,14 @@ class SQL():
         conn.close()
         return otv
 
-    def add_student(self, about_user):
+    def add_student(self, about_user: list) -> None:
         conn = sqlite3.connect('data.db')
         cur = conn.cursor()
         cur.execute("INSERT INTO students VALUES(?, ?, ?, ?, ?);", about_user)
         conn.commit()
         conn.close()
 
-    def remove_student(self, discord_id):
+    def remove_student(self, discord_id: int) -> None:
         conn = sqlite3.connect('data.db')
         cur = conn.cursor()
         cur.execute(f'DELETE from students WHERE discord_id={discord_id}')
@@ -182,7 +182,7 @@ class SQL():
         conn.close()
         return otv
 
-    def get_free_groups_for_working_of(self, discord_id):
+    def get_free_groups_for_working_of(self, discord_id: int) -> dict:
         conn = sqlite3.connect('data.db')
         cur = conn.cursor()
         cur.execute(f"SELECT * FROM students WHERE discord_id = {discord_id}")
@@ -213,7 +213,7 @@ class SQL():
         return otv
 
     #Working_of
-    def create_working_of(self, discord_id, role_id, start_time, end_time):
+    def create_working_of(self, discord_id: int, role_id: int, start_time: str, end_time: str) -> int:
         conn = sqlite3.connect('data.db')
         cur = conn.cursor()
         cur.execute("SELECT * FROM working_of")
@@ -224,14 +224,14 @@ class SQL():
         conn.close()
         return id
 
-    def update_working_of_visit(self, db_id, is_visit):
+    def update_working_of_visit(self, db_id: int, is_visit: bool) -> None:
         conn = sqlite3.connect('data.db')
         cur = conn.cursor()
         cur.execute(f"UPDATE working_of SET student_visit = {is_visit} WHERE id = {db_id}")
         conn.commit()
         conn.close()
 
-    def get_working_of_by_discord_id(self, discord_id):
+    def get_working_of_by_discord_id(self, discord_id: int) -> dict:
         conn = sqlite3.connect('data.db')
         cur = conn.cursor()
         cur.execute(f"SELECT * FROM working_of WHERE student_id={discord_id}")
