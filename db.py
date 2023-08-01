@@ -24,9 +24,9 @@ class SQL():
         """)
         conn.commit()
         cur.execute("""CREATE TABLE IF NOT EXISTS working_of(
+        id INT PRIMARY KEY,
         student_id INT,
         role_id INT,
-        date TEXT,
         start_time TEXT,
         end_time TEXT,
         student_visit BOOL
@@ -62,9 +62,9 @@ class SQL():
         # conn.commit()
 
         # Test
-        # cur.execute("INSERT INTO groups VALUES(?, ?, ?, ?, ?, ?);", (1119557596907577404, 'monday, sunday', '09:26', '11:00', 1120389836730286110, 1120389774243549247))
+        # cur.execute("INSERT INTO groups VALUES(?, ?, ?, ?, ?, ?);", (1119557596907577404, 'monday, saturday, sunday', '09:26', '11:00', 1120389836730286110, 1120389774243549247))
         # conn.commit()
-        # cur.execute("INSERT INTO groups VALUES(?, ?, ?, ?, ?, ?);", (1132589392079355904, 'sunday', '09:25', '11:00', 1126820305923493888, 1119576448064294972))
+        # cur.execute("INSERT INTO groups VALUES(?, ?, ?, ?, ?, ?);", (1132589392079355904, 'saturday, sunday, monday, tuesday, wednesday, thursday', '20:06', '20:08', 1126820305923493888, 1119576448064294972))
         # conn.commit()
         conn.close()
 
@@ -146,6 +146,13 @@ class SQL():
         conn.commit()
         conn.close()
 
+    def remove_student(self, discord_id):
+        conn = sqlite3.connect('data.db')
+        cur = conn.cursor()
+        cur.execute(f'DELETE from students WHERE discord_id={discord_id}')
+        conn.commit()
+        conn.close()
+
     # Groups
     def get_all_groups(self) -> list:
         conn = sqlite3.connect('data.db')
@@ -207,4 +214,34 @@ class SQL():
 
     #Working_of
     def create_working_of(self, discord_id, role_id, start_time, end_time):
-        
+        conn = sqlite3.connect('data.db')
+        cur = conn.cursor()
+        cur.execute("SELECT * FROM working_of")
+        id = len(cur.fetchall()) + 1
+        cur = conn.cursor()
+        cur.execute("INSERT INTO working_of VALUES(?, ?, ?, ?, ?, ?);", (id, discord_id, role_id, start_time, end_time, False))
+        conn.commit()
+        conn.close()
+        return id
+
+    def update_working_of_visit(self, db_id, is_visit):
+        conn = sqlite3.connect('data.db')
+        cur = conn.cursor()
+        cur.execute(f"UPDATE working_of SET student_visit = {is_visit} WHERE id = {db_id}")
+        conn.commit()
+        conn.close()
+
+    def get_working_of_by_discord_id(self, discord_id):
+        conn = sqlite3.connect('data.db')
+        cur = conn.cursor()
+        cur.execute(f"SELECT * FROM working_of WHERE student_id={discord_id}")
+        working_of = cur.fetchone()
+        conn.close()
+        return {
+            'id': working_of[0],
+            'student_id': working_of[1],
+            'role_id': working_of[2],
+            'start_time': working_of[3],
+            'end_time': working_of[4],
+            'student_visit': working_of[5]
+        }
