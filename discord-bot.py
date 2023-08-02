@@ -1,5 +1,5 @@
 import discord
-from discord.ext import commands
+from discord.ext import commands 
 from dotenv import load_dotenv
 import os
 import asyncio
@@ -284,6 +284,8 @@ async def unreg(ctx, user: discord.Member = None):
     if ADMIN_ROLE_ID in author_roles:
         if user is None:
             await ctx.reply('Ты не указал пользователя, которого нужно удалить!')
+            await asyncio.sleep(3)
+            await ctx.channel.purge(limit=2)
             return
         await loop.run_in_executor(None, db.remove_student, user.id)
         for role in user.roles:
@@ -295,6 +297,20 @@ async def unreg(ctx, user: discord.Member = None):
         await ctx.reply(f'{user} был удалён из базы данных и у него были убраны все роли!')
     else:
         await ctx.reply('У Вас нет права на лево! Вообще, по правилам сервера - это бан!:)')
+    await asyncio.sleep(3)
+    await ctx.channel.purge(limit=2)
+
+
+@bot.command() # Функция очистки
+async def clear(ctx, amount = 10):
+    author = ctx.message.author
+    author_roles = [role.id for role in author.roles]
+    if ADMIN_ROLE_ID in author_roles:
+        await ctx.channel.purge(limit=amount + 1)
+    else:
+        await ctx.reply('У Вас нет права на лево! Вообще, по правилам сервера - это бан!:)')
+        await asyncio.sleep(3)
+        await ctx.channel.purge(limit=2)
 
 
 def main(): # Главная функция запуска бота
@@ -303,3 +319,5 @@ def main(): # Главная функция запуска бота
 
 if __name__ == '__main__':
     main()
+
+# Created by slezkinis
