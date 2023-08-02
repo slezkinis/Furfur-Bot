@@ -149,7 +149,8 @@ bot.remove_command('help')
 
 
 @bot.event
-async def on_ready(): # После запуска бота запускается дб
+async def on_ready(): # После запуска бота запускается дб и задаётся статус бота
+    await bot.change_presence(status=discord.Status.online, activity=discord.Game('Python 💻'))
     asyncio.run_coroutine_threadsafe(start_database(), bot.loop)
 
 
