@@ -29,7 +29,8 @@ class SQL():
         role_id INT,
         start_time TEXT,
         end_time TEXT,
-        student_visit BOOL
+        student_visit BOOL,
+        voice_id INT
         );
         """)
         conn.commit()
@@ -213,13 +214,13 @@ class SQL():
         return otv
 
     #Working_of
-    def create_working_of(self, discord_id: int, role_id: int, start_time: str, end_time: str) -> int:
+    def create_working_of(self, discord_id: int, role_id: int, start_time: str, end_time: str, voice_id: int) -> int:
         conn = sqlite3.connect('data.db')
         cur = conn.cursor()
         cur.execute("SELECT * FROM working_of")
         id = len(cur.fetchall()) + 1
         cur = conn.cursor()
-        cur.execute("INSERT INTO working_of VALUES(?, ?, ?, ?, ?, ?);", (id, discord_id, role_id, start_time, end_time, False))
+        cur.execute("INSERT INTO working_of VALUES(?, ?, ?, ?, ?, ?, ?);", (id, discord_id, role_id, start_time, end_time, False, voice_id))
         conn.commit()
         conn.close()
         return id
@@ -243,5 +244,25 @@ class SQL():
             'role_id': working_of[2],
             'start_time': working_of[3],
             'end_time': working_of[4],
-            'student_visit': working_of[5]
+            'student_visit': working_of[5],
+            'voice_id': working_of[6]
         }
+
+    def get_all_working_of(self) -> list:
+        conn = sqlite3.connect('data.db')
+        cur = conn.cursor()
+        cur.execute("SELECT * FROM working_of")
+        all_working_of = cur.fetchall()
+        conn.close()
+        data = []
+        for working_of in all_working_of:
+            data.append({
+            'id': working_of[0],
+            'student_id': working_of[1],
+            'role_id': working_of[2],
+            'start_time': working_of[3],
+            'end_time': working_of[4],
+            'student_visit': working_of[5],
+            'voice_id': working_of[6]
+            })
+        return data

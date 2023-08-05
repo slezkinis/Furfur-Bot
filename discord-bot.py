@@ -134,9 +134,20 @@ async def remove_role(user: discord.Member, role_id: int): # После окон
 
 async def start_database():
     await update()
+    loop = asyncio.get_event_loop()
+    all_working_of = await loop.run_in_executor(None, db.get_all_working_of)
+    now = datetime.datetime.now()
+    for working_of in all_working_of:
+        start_time = datetime.datetime.strptime(working_of['start_time'], '%Y-%m-%d %H:%M:%S')
+        end_time = start_time + datetime.timedelta(hours=1)
+        if now <= start_time:
+            user = bot.get_user(working_of['student_id'])
+            once_schedule.once(start_time - datetime.timedelta(minutes=10), lambda user, role_id: asyncio.run_coroutine_threadsafe(get_roles_and_notofication(user, role_id), bot.loop), args=(user, working_of['role_id'], ))
+            once_schedule.once(start_time + datetime.timedelta(minutes=15), lambda user, voice_chat_id, db_id: asyncio.run_coroutine_threadsafe(check_members_work_of(user, voice_chat_id, db_id), bot.loop), args=(user, working_of['voice_id'], working_of['id'], )) # TODO
+            once_schedule.once(end_time, lambda user, role_id: asyncio.run_coroutine_threadsafe(remove_role(user, role_id), bot.loop), args=(user, working_of['role_id'], ))
     while True:
+        await loop.run_in_executor(None, once_schedule.exec_jobs)
         schedule.run_pending()
-        once_schedule.exec_planed_voice_checks()
         await asyncio.sleep(1)
 
 
@@ -153,15 +164,15 @@ async def on_ready(): # После запуска бота запускаетс�
     await bot.change_presence(status=discord.Status.online, activity=discord.Game('Python 💻'))
     asyncio.run_coroutine_threadsafe(start_database(), bot.loop)
 
-
-@bot.event
-async def on_member_join(member): # В дальнейшем, функция echo переедет сюда. Срабатывает, когда человек присоединяется
-    loop = asyncio.get_running_loop()
-    groups = await loop.run_in_executor(None, db.get_all_groups_ids)
-    guild = bot.get_guild(int(SERVER_ID))
-    groups_texts = [f'{num}. {guild.get_role(group_role_id)}' for num, group_role_id in enumerate(groups, 1)]
-    user = bot.get_user(member.id)
-    await user.send('### Привет! Я бот-помощник на сервере Python всё съест! Сейчас тебе нужно выбрать свою группу, в которой ты учишься (лучше уточни родителей или преподавателя). Вот доступные группы:\n{}\nЧтобы зарегистрироваться введи команду прямо ко мне в чат:\n/reg ***<Имя>*** ***<Фамилия>*** ***<ID группы (смотри сверху)>*** ***<ссылка на твой Devman профиль>***\n Вот пример: /reg Фурфур Фурфурный 1 https://dvmn.org/user/furfur/'.format("\n".join(groups_texts)))
+# Временно убрал код для теста бота
+# @bot.event
+# async def on_member_join(member): # В дальнейшем, функция echo переедет сюда. Срабатывает, когда человек присоединяется
+#     loop = asyncio.get_running_loop()
+#     groups = await loop.run_in_executor(None, db.get_all_groups_ids)
+#     guild = bot.get_guild(int(SERVER_ID))
+#     groups_texts = [f'{num}. {guild.get_role(group_role_id)}' for num, group_role_id in enumerate(groups, 1)]
+#     user = bot.get_user(member.id)
+#     await user.send('### Привет! Я бот-помощник на сервере Python всё съест! Сейчас тебе нужно выбрать свою группу, в которой ты учишься (лучше уточни родителей или преподавателя). Вот доступные группы:\n{}\nЧтобы зарегистрироваться введи команду прямо ко мне в чат:\n/reg ***<Имя>*** ***<Фамилия>*** ***<ID группы (смотри сверху)>*** ***<ссылка на твой Devman профиль>***\n Вот пример: /reg Фурфур Фурфурный 1 https://dvmn.org/user/furfur/'.format("\n".join(groups_texts)))
 
 
 @bot.command(name='check') # Используется для проверки пропусков.
@@ -190,7 +201,6 @@ async def check_working_of(ctx):
         await ctx.reply('Привет! Cейчас у тебя вот столько пропусков: {}. Не переживай, их можно отработать:) Вот доступные группы:\n{}\nОтработка идёт один час!\nЧтобы зарегистрироваться на отработку напиши: /work_of <Номер группы (смотри сверху)>'.format(user_skips, '\n'.join(groups_texts))) #TODO Добавить к базе данных!
     else:
         await ctx.reply('Привет! Cейчас у тебя вот столько пропусков: {}. Не переживай, их можно отработать:) Но к сожалению, сейчас нет доступной группы. Сможешь проверить доступные группы через несколько дней с помощью команды: /check'.format(user_skips))
-
 
 @bot.command(name='work_of') # Для записи на отработку
 async def add_work_of(ctx, group_number: int = None):
@@ -222,17 +232,16 @@ async def add_work_of(ctx, group_number: int = None):
         return
     selected_working_of = all_working_of[group_number - 1]
     start_time = datetime.datetime.strptime(f'{selected_working_of[1]} {selected_working_of[0]}', '%Y-%m-%d %H:%M')
-    end_time = start_time + datetime.timedelta(minutes=1)
-    id = await loop.run_in_executor(None, db.create_working_of, user.id, selected_working_of[2], start_time, end_time)
-    once_schedule.once(start_time - datetime.timedelta(seconds=10), lambda user, role_id: asyncio.run_coroutine_threadsafe(get_roles_and_notofication(user, role_id), bot.loop), args=(user, selected_working_of[2], ))
-    once_schedule.once(start_time + datetime.timedelta(seconds=15), lambda user, voice_chat_id, db_id: asyncio.run_coroutine_threadsafe(check_members_work_of(user, voice_chat_id, db_id), bot.loop), args=(user, selected_working_of[3], id, )) # TODO
+    end_time = start_time + datetime.timedelta(hours=1)
+    id = await loop.run_in_executor(None, db.create_working_of, user.id, selected_working_of[2], start_time, end_time, selected_working_of[3])
+    once_schedule.once(start_time - datetime.timedelta(minutes=10), lambda user, role_id: asyncio.run_coroutine_threadsafe(get_roles_and_notofication(user, role_id), bot.loop), args=(user, selected_working_of[2], ))
+    once_schedule.once(start_time + datetime.timedelta(minutes=15), lambda user, voice_chat_id, db_id: asyncio.run_coroutine_threadsafe(check_members_work_of(user, voice_chat_id, db_id), bot.loop), args=(user, selected_working_of[3], id, )) # TODO
     once_schedule.once(end_time, lambda user, role_id: asyncio.run_coroutine_threadsafe(remove_role(user, role_id), bot.loop), args=(user, selected_working_of[2], ))
     role_name =  guild.get_role(selected_working_of[2]).name
     student_info = await loop.run_in_executor(None, db.get_student, user.id)
     new_student_skips = student_info['skips'] - 1
     await loop.run_in_executor(None, db.update_student_skips, new_student_skips, user.id)
     await ctx.reply(f'Всё! Я записал тебя! ***{start_time.strftime("%d.%m.%Y %H:%M")}*** подключайся к голосовому каналу ***Занятие {role_name}*** (доступ к нему у тебя откроется за 10 минут до начала). Также перед началом я тебе напомню! Прошу не опаздывать!' )
-    
     
 @bot.command(name='echo') # Заглушка! В дальнейшем, можно добавить команду и использовать код
 async def help(ctx):
@@ -297,13 +306,13 @@ async def unreg(ctx, user: discord.Member = None):
                     continue
         await ctx.reply(f'{user} был удалён из базы данных и у него были убраны все роли!')
     else:
-        await ctx.reply('У Вас нет права на лево! Вообще, по правилам сервера - это бан!:)')
+        await ctx.reply('У Вас нет права на лево!')
     await asyncio.sleep(3)
     await ctx.channel.purge(limit=2)
 
 
 @bot.command() # Функция очистки
-async def clear(ctx, amount = 10):
+async def clear(ctx, amount = 3):
     author = ctx.message.author
     author_roles = [role.id for role in author.roles]
     if ADMIN_ROLE_ID in author_roles:
@@ -312,6 +321,34 @@ async def clear(ctx, amount = 10):
         await ctx.reply('У Вас нет права на лево! Вообще, по правилам сервера - это бан!:)')
         await asyncio.sleep(3)
         await ctx.channel.purge(limit=2)
+
+
+@bot.command()
+async def add(ctx):
+    loop = asyncio.get_running_loop()
+    author = ctx.message.author
+    student_info = await loop.run_in_executor(None, db.get_student, author.id)
+    new_student_skips = student_info['skips'] + 1
+    await loop.run_in_executor(None, db.update_student_skips, new_student_skips, author.id)
+
+
+@bot.command()
+async def help(ctx):
+    author = ctx.message.author
+    user = bot.get_user(author.id)
+    text = '''
+Привет! Это список команд:
+/reg - Зарегестрироваться в базе данных (/reg Фурфур Фурфурный 1 https://dvmn.org/user/furfur/
+/unreg <@user> - Удалить пользователя из базы данных. Только для админа! Пример: /unreg @Furfur
+/clear <кол-во сообщений> - Удалить сообщения из чата. Только для админа! По умолчанию: 3 сообщения. Пример: /clear 1
+/check - Проверить кол-во пропусков у себя
+/work_of <номер группы> - записаться на отработку. Пример: /work_of 1
+Если будут вопросы, спрашивай у преподавателя.'''
+    await user.send(text)
+    try:
+        await ctx.channel.purge(limit=1)
+    except:
+        pass
 
 
 def main(): # Главная функция запуска бота
