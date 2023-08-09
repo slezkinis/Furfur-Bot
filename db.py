@@ -34,32 +34,32 @@ class SQL():
         );
         """)
         conn.commit()
-        ## Данные о группах
-        # cur.execute("INSERT INTO groups VALUES(?, ?, ?, ?, ?, ?);", (1119554223579873310, 'saturday', '12:00', '14:00', 1119555115691548722, 1119555041230069760))
+        ## Данные о группах(время в UTC, но надо проверить правильность)
+        # cur.execute("INSERT INTO groups VALUES(?, ?, ?, ?, ?, ?);", (1119554223579873310, 'saturday', '09:00', '11:00', 1119555115691548722, 1119555041230069760))
         # conn.commit()
 
-        # cur.execute("INSERT INTO groups VALUES(?, ?, ?, ?, ?, ?);", (1119556931296698539, 'saturday', '14:00', '16:00', 1119556186421866566, 1119556008252035143))
+        # cur.execute("INSERT INTO groups VALUES(?, ?, ?, ?, ?, ?);", (1119556931296698539, 'saturday', '11:00', '13:00', 1119556186421866566, 1119556008252035143))
         # conn.commit()
 
-        # cur.execute("INSERT INTO groups VALUES(?, ?, ?, ?, ?, ?);", (1119557155801026622, 'monday, thursday', '11:00', '12:00', 1119562226299318303, 1119562137170366474))
+        # cur.execute("INSERT INTO groups VALUES(?, ?, ?, ?, ?, ?);", (1119557155801026622, 'monday, thursday', '08:00', '09:00', 1119562226299318303, 1119562137170366474))
         # conn.commit()
 
-        # cur.execute("INSERT INTO groups VALUES(?, ?, ?, ?, ?, ?);", (1119557293596479559, 'monday, wednesday', '17:00', '18:00', 1119562492260134922, 1119562433133023282))
+        # cur.execute("INSERT INTO groups VALUES(?, ?, ?, ?, ?, ?);", (1119557293596479559, 'monday, wednesday', '14:00', '15:00', 1119562492260134922, 1119562433133023282))
         # conn.commit()
 
-        # cur.execute("INSERT INTO groups VALUES(?, ?, ?, ?, ?, ?);", (1119557472559042620, 'monday, wednesday', '18:00', '19:00', 1122905299423072368, 1122905860188950619))
+        # cur.execute("INSERT INTO groups VALUES(?, ?, ?, ?, ?, ?);", (1119557472559042620, 'monday, wednesday', '15:00', '16:00', 1122905299423072368, 1122905860188950619))
         # conn.commit()
 
-        # cur.execute("INSERT INTO groups VALUES(?, ?, ?, ?, ?, ?);", (1119557596907577404, 'monday, wednesday', '19:00', '20:00', 1120389836730286110, 1120389774243549247))
+        # cur.execute("INSERT INTO groups VALUES(?, ?, ?, ?, ?, ?);", (1119557596907577404, 'monday, wednesday', '16:00', '17:00', 1120389836730286110, 1120389774243549247))
         # conn.commit()
 
-        # cur.execute("INSERT INTO groups VALUES(?, ?, ?, ?, ?, ?);", (1119557679505997944, 'tuesday, thursday', '18:00', '19:00', 1120730337044090890, 1120730234388484136))
+        # cur.execute("INSERT INTO groups VALUES(?, ?, ?, ?, ?, ?);", (1119557679505997944, 'tuesday, thursday', '15:00', '16:00', 1120730337044090890, 1120730234388484136))
         # conn.commit()
 
-        # cur.execute("INSERT INTO groups VALUES(?, ?, ?, ?, ?, ?);", (1119557752419794964, 'tuesday, thursday', '19:00', '20:00', 1120745828504567939, 1120745752755445810))
+        # cur.execute("INSERT INTO groups VALUES(?, ?, ?, ?, ?, ?);", (1119557752419794964, 'tuesday, thursday', '16:00', '17:00', 1120745828504567939, 1120745752755445810))
         # conn.commit()
 
-        # cur.execute("INSERT INTO groups VALUES(?, ?, ?, ?, ?, ?);", (1119557849857667202, 'wednesday, friday', '16:00', '17:00', 1121063191481421904, 1121063123391098991))
+        # cur.execute("INSERT INTO groups VALUES(?, ?, ?, ?, ?, ?);", (1119557849857667202, 'wednesday, friday', '13:00', '14:00', 1121063191481421904, 1121063123391098991))
         # conn.commit()
 
         ## Test

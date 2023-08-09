@@ -48,7 +48,8 @@ async def planed_voice_check(channel: discord.TextChannel, guild: discord.Guild,
             days = group['days'].replace('monday', '0').replace('tuesday', '1').replace('wednesday', '2').replace('thursday', '3').replace('friday', '4').replace('saturday', '5').replace('sunday', '6')
             for index in range(len(days.split(', '))):
                 date = next_weekday(datetime.date.today(), int(days.split(', ')[index]))
-                groups_texts_dates.append((f'{date.strftime("%d.%m")} в {group["start_time"]}', date))
+                moscow_time = f'{int(group["start_time"].split(":")[0]) + 3}:{group["start_time"].split(":")[1]}'
+                groups_texts_dates.append((f'{date.strftime("%d.%m")} в {moscow_time}', date))
         groups_texts = [f'{num}. {i[0]}' for num, i in enumerate(sorted(groups_texts_dates, key=lambda i: i[1]), 1)]
         if groups_texts:
             await student.send('Привет! Ты пропустил занятие, которое сейчас было! Не переживай, этот пропуск можно отработать:) Вот доступные группы:\n{}\nОтработка идёт один час!\nЧтобы зарегистрироваться на отработку напиши: /work_of <Номер группы (смотри сверху)>'.format('\n'.join(groups_texts))) #TODO Добавить к базе данных!
@@ -115,7 +116,8 @@ async def check_members_work_of(user: discord.Member, voice_chat_id: int, db_id:
             days = group['days'].replace('monday', '0').replace('tuesday', '1').replace('wednesday', '2').replace('thursday', '3').replace('friday', '4').replace('saturday', '5').replace('sunday', '6')
             for index in range(len(days.split(', '))):
                 date = next_weekday(datetime.date.today(), int(days.split(', ')[index]))
-                groups_texts_dates.append((f'{date.strftime("%d.%m")} в {group["start_time"]}', date))
+                moscow_time = f'{int(group["start_time"].split(":")[0]) + 3}:{group["start_time"].split(":")[1]}'
+                groups_texts_dates.append((f'{date.strftime("%d.%m")} в {moscow_time}', date))
         groups_texts = [f'{num}. {i[0]}' for num, i in enumerate(sorted(groups_texts_dates, key=lambda i: i[1]), 1)]
         if groups_texts:
             await user.send('Привет! Ты пропустил занятие, которое сейчас было! Не переживай, этот пропуск можно отработать:) Вот доступные группы:\n{}\nОтработка идёт один час!\nЧтобы зарегистрироваться на отработку напиши: /work_of <Номер группы (смотри сверху)>'.format('\n'.join(groups_texts))) #TODO Добавить к базе данных!
@@ -195,7 +197,8 @@ async def check_working_of(ctx):
         days = group['days'].replace('monday', '0').replace('tuesday', '1').replace('wednesday', '2').replace('thursday', '3').replace('friday', '4').replace('saturday', '5').replace('sunday', '6')
         for index in range(len(days.split(', '))):
             date = next_weekday(datetime.date.today(), int(days.split(', ')[index]))
-            groups_texts_dates.append((f'{date.strftime("%d.%m")} в {group["start_time"]}', date))
+            moscow_time = f'{int(group["start_time"].split(":")[0]) + 3}:{group["start_time"].split(":")[1]}'
+            groups_texts_dates.append((f'{date.strftime("%d.%m")} в {moscow_time}', date))
     groups_texts = [f'{num}. {i[0]}' for num, i in enumerate(sorted(groups_texts_dates, key=lambda i: i[1]), 1)]
     if groups_texts:
         await ctx.reply('Привет! Cейчас у тебя вот столько пропусков: {}. Не переживай, их можно отработать:) Вот доступные группы:\n{}\nОтработка идёт один час!\nЧтобы зарегистрироваться на отработку напиши: /work_of <Номер группы (смотри сверху)>'.format(user_skips, '\n'.join(groups_texts))) #TODO Добавить к базе данных!
@@ -241,7 +244,8 @@ async def add_work_of(ctx, group_number: int = None):
     student_info = await loop.run_in_executor(None, db.get_student, user.id)
     new_student_skips = student_info['skips'] - 1
     await loop.run_in_executor(None, db.update_student_skips, new_student_skips, user.id)
-    await ctx.reply(f'Всё! Я записал тебя! ***{start_time.strftime("%d.%m.%Y %H:%M")}*** подключайся к голосовому каналу ***Занятие {role_name}*** (доступ к нему у тебя откроется за 10 минут до начала). Также перед началом я тебе напомню! Прошу не опаздывать!' )
+    moscow_start_time = start_time + datetime.timedelta(hours=3)
+    await ctx.reply(f'Всё! Я записал тебя! ***{moscow_start_time.strftime("%d.%m.%Y %H:%M")}*** подключайся к голосовому каналу ***Занятие {role_name}*** (доступ к нему у тебя откроется за 10 минут до начала). Также перед началом я тебе напомню! Прошу не опаздывать!' )
     
 @bot.command(name='echo') # Заглушка! В дальнейшем, можно добавить команду и использовать код
 async def help(ctx):
