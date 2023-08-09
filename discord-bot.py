@@ -291,43 +291,33 @@ async def reg(ctx, name=None, last_name=None, role_id=None, *, devman_url=None):
 
 
 @bot.command() # Функция для админов. Удаляет ученика из базы данных и убирает у него роли
+@commands.has_role(ADMIN_ROLE_ID)
 async def unreg(ctx, user: discord.Member = None):
     loop = asyncio.get_running_loop()
-    author = ctx.message.author
-    author_roles = [role.id for role in author.roles]
-    if ADMIN_ROLE_ID in author_roles:
-        if user is None:
-            await ctx.reply('Ты не указал пользователя, которого нужно удалить!')
-            await asyncio.sleep(3)
-            await ctx.channel.purge(limit=2)
-            return
-        await loop.run_in_executor(None, db.remove_student, user.id)
-        for role in user.roles:
-            if role.id != ADMIN_ROLE_ID:
-                try:
-                    await user.remove_roles(role)
-                except:
-                    continue
-        await ctx.reply(f'{user} был удалён из базы данных и у него были убраны все роли!')
-    else:
-        await ctx.reply('У Вас нет права на лево!')
+    if user is None:
+        await ctx.reply('Ты не указал пользователя, которого нужно удалить!')
+        await asyncio.sleep(3)
+        await ctx.channel.purge(limit=2)
+        return
+    await loop.run_in_executor(None, db.remove_student, user.id)
+    for role in user.roles:
+        if role.id != ADMIN_ROLE_ID:
+            try:
+                await user.remove_roles(role)
+            except:
+                continue
+    await ctx.reply(f'{user} был удалён из базы данных и у него были убраны все роли!')
     await asyncio.sleep(3)
     await ctx.channel.purge(limit=2)
 
 
 @bot.command() # Функция очистки
+@commands.has_role(ADMIN_ROLE_ID)
 async def clear(ctx, amount = 3):
-    author = ctx.message.author
-    author_roles = [role.id for role in author.roles]
-    if ADMIN_ROLE_ID in author_roles:
-        await ctx.channel.purge(limit=amount + 1)
-    else:
-        await ctx.reply('У Вас нет права на лево! Вообще, по правилам сервера - это бан!:)')
-        await asyncio.sleep(3)
-        await ctx.channel.purge(limit=2)
-
+    await ctx.channel.purge(limit=amount + 1)
 
 @bot.command()
+@commands.has_role(ADMIN_ROLE_ID)
 async def add(ctx):
     loop = asyncio.get_running_loop()
     author = ctx.message.author
@@ -353,6 +343,14 @@ async def help(ctx):
         await ctx.channel.purge(limit=1)
     except:
         pass
+
+
+@bot.event
+async def on_command_error(ctx, error):
+    if isinstance(error, commands.MissingRole):
+        await ctx.reply('У Вас нет права на лево!')
+        await asyncio.sleep(3)
+        await ctx.channel.purge(limit=2)
 
 
 def main(): # Главная функция запуска бота
