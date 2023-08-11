@@ -63,9 +63,9 @@ class SQL():
         # conn.commit()
 
         ## Test
-        # cur.execute("INSERT INTO groups VALUES(?, ?, ?, ?, ?, ?);", (1119557596907577404, 'monday, saturday, sunday', '09:26', '11:00', 1120389836730286110, 1120389774243549247))
+        # cur.execute("INSERT INTO groups VALUES(?, ?, ?, ?, ?, ?);", (1119557596907577404, 'monday, friday, saturday, sunday', '09:26', '11:00', 1120389836730286110, 1120389774243549247))
         # conn.commit()
-        # cur.execute("INSERT INTO groups VALUES(?, ?, ?, ?, ?, ?);", (1132589392079355904, 'saturday, sunday, monday, tuesday, wednesday, thursday', '20:06', '20:08', 1126820305923493888, 1119576448064294972))
+        # cur.execute("INSERT INTO groups VALUES(?, ?, ?, ?, ?, ?);", (1132589392079355904, 'saturday, sunday, monday, tuesday, wednesday, thursday, friday', '20:06', '20:08', 1126820305923493888, 1119576448064294972))
         # conn.commit()
         conn.close()
 
@@ -182,6 +182,21 @@ class SQL():
         otv = [i[0] for i in cur.fetchall()]
         conn.close()
         return otv
+    
+    def get_groups_where_voice_channel(self, voice_chat_id: int) -> dict:
+        conn = sqlite3.connect('data.db')
+        cur = conn.cursor()
+        cur.execute(f"SELECT * FROM groups WHERE voice_chat_id = {voice_chat_id}")
+        group = cur.fetchone()
+        conn.close()
+        return {
+                'role_id': group[0],
+                'days': group[1],
+                'start_time': group[2],
+                'end_time': group[3],
+                'voice_chat_id': group[4],
+                'channel_id': group[5]
+        }
 
     def get_free_groups_for_working_of(self, discord_id: int) -> dict:
         conn = sqlite3.connect('data.db')
@@ -220,7 +235,7 @@ class SQL():
         cur.execute("SELECT * FROM working_of")
         id = len(cur.fetchall()) + 1
         cur = conn.cursor()
-        cur.execute("INSERT INTO working_of VALUES(?, ?, ?, ?, ?, ?, ?);", (id, discord_id, role_id, start_time, end_time, False, voice_id))
+        cur.execute("INSERT INTO working_of VALUES(?, ?, ?, ?, ?, ?, ?);", (id, discord_id, role_id, start_time, end_time, True, voice_id)) # TODO поменять на False
         conn.commit()
         conn.close()
         return id
