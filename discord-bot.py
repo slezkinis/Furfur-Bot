@@ -1,5 +1,5 @@
-import discord
-from discord.ext import commands 
+import disnake as discord
+from disnake.ext import commands 
 from dotenv import load_dotenv
 import os
 import asyncio
@@ -248,7 +248,7 @@ async def add_work_of(ctx, group_number: int = None):
     await ctx.reply(f'Всё! Я записал тебя! ***{moscow_start_time.strftime("%d.%m.%Y %H:%M")}*** подключайся к голосовому каналу ***Занятие {role_name}*** (доступ к нему у тебя откроется за 10 минут до начала). Также перед началом я тебе напомню! Прошу не опаздывать!' )
     
 @bot.command(name='echo') # Заглушка! В дальнейшем, можно добавить команду и использовать код
-async def help(ctx):
+async def get_groups(ctx):
     loop = asyncio.get_running_loop()
     groups = await loop.run_in_executor(None, db.get_all_groups_ids)
     guild = bot.get_guild(int(SERVER_ID))
@@ -290,15 +290,9 @@ async def reg(ctx, name=None, last_name=None, role_id=None, *, devman_url=None):
     await ctx.reply(f'Теперь ты назначен в группу {role.name}. Проверь, в нашем Discord сервере у тебя должны появится новый текстовый и голосовой каналы. В голосовом будут проходить занятия. Просто подключись к нему за несколько минут до начала. Удачи тебе в обучении и у тебя всё получится:)')
 
 
-@bot.command() # Функция для админов. Удаляет ученика из базы данных и убирает у него роли
-@commands.has_role(ADMIN_ROLE_ID)
-async def unreg(ctx, user: discord.Member = None):
+@bot.slash_command(name='unreg', description='Удалить пользователя из базы данных.', default_member_permissions=discord.Permissions.administrator.flag) # Функция для админов. Удаляет ученика из базы данных и убирает у него роли
+async def unreg(ctx, user: discord.Member):
     loop = asyncio.get_running_loop()
-    if user is None:
-        await ctx.reply('Ты не указал пользователя, которого нужно удалить!')
-        await asyncio.sleep(3)
-        await ctx.channel.purge(limit=2)
-        return
     await loop.run_in_executor(None, db.remove_student, user.id)
     for role in user.roles:
         if role.id != ADMIN_ROLE_ID:
@@ -326,9 +320,9 @@ async def add(ctx):
     await loop.run_in_executor(None, db.update_student_skips, new_student_skips, author.id)
 
 
-@bot.command()
+@bot.slash_command(name='help', description='помощь с командами')
 async def help(ctx):
-    author = ctx.message.author
+    author = ctx.author
     user = bot.get_user(author.id)
     text = '''
 Привет! Это список команд:
@@ -339,18 +333,19 @@ async def help(ctx):
 /work_of <номер группы> - записаться на отработку. Пример: /work_of 1
 Если будут вопросы, спрашивай у преподавателя.'''
     await user.send(text)
+    await ctx.response.send_message('Я отправил тебе личное сообщение:)')
     try:
-        await ctx.channel.purge(limit=1)
+        await ctx.channel.purge(limit=2)
     except:
         pass
 
 
-@bot.event
-async def on_command_error(ctx, error):
-    if isinstance(error, commands.MissingRole):
-        await ctx.reply('У Вас нет права на лево!')
-        await asyncio.sleep(3)
-        await ctx.channel.purge(limit=2)
+# @bot.event
+# async def on_command_error(ctx, error):
+#     if isinstance(error, commands.MissingRole):
+#         await ctx.reply('У Вас нет права на лево!')
+#         await asyncio.sleep(3)
+#         await ctx.channel.purge(limit=2)
 
 
 def main(): # Главная функция запуска бота
