@@ -155,6 +155,13 @@ class SQL():
         conn.close()
 
     # Groups
+    def create_group(self, role_id: int, days: str, start_time: str, end_time: str, voice_chat_id: int, text_chat_id: int) -> None:
+        conn = sqlite3.connect('data.db')
+        cur = conn.cursor()
+        cur.execute("INSERT INTO groups VALUES(?, ?, ?, ?, ?, ?);", (role_id, days, start_time, end_time, voice_chat_id, text_chat_id))
+        conn.commit()
+        conn.close()
+    
     def get_all_groups(self) -> list:
         conn = sqlite3.connect('data.db')
         cur = conn.cursor()
