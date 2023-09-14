@@ -155,7 +155,7 @@ class SQL():
         conn.commit()
         conn.close()
 
-    def remove_all_groups(self) -> None:
+    def remove_all_students(self) -> None:
         conn = sqlite3.connect('data.db')
         cur = conn.cursor()
         cur.execute(f'DELETE from students')
