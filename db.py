@@ -155,6 +155,13 @@ class SQL():
         conn.commit()
         conn.close()
 
+    def remove_all_groups(self) -> None:
+        conn = sqlite3.connect('data.db')
+        cur = conn.cursor()
+        cur.execute(f'DELETE from students')
+        conn.commit()
+        conn.close()
+
     # Groups
     def create_group(self, role_id: int, days: str, start_time: str, end_time: str, voice_chat_id: int, text_chat_id: int) -> None:
         conn = sqlite3.connect('data.db')
