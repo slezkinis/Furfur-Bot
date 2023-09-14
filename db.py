@@ -1,3 +1,4 @@
+
 import sqlite3
 
 
@@ -34,7 +35,7 @@ class SQL():
         );
         """)
         conn.commit()
-        ## Данные о группах(время в UTC, но надо проверить правильность)
+        # Данные о группах(время в UTC, но надо проверить правильность)
         # cur.execute("INSERT INTO groups VALUES(?, ?, ?, ?, ?, ?);", (1119554223579873310, 'saturday', '09:00', '11:00', 1119555115691548722, 1119555041230069760))
         # conn.commit()
 
@@ -67,7 +68,7 @@ class SQL():
         # conn.commit()
         # cur.execute("INSERT INTO groups VALUES(?, ?, ?, ?, ?, ?);", (1132589392079355904, 'saturday, sunday, monday, tuesday, wednesday, thursday, friday', '20:06', '20:08', 1126820305923493888, 1119576448064294972))
         # conn.commit()
-        conn.close()
+        # conn.close()
 
     # Students
     def get_all_students(self) -> list:
@@ -159,6 +160,20 @@ class SQL():
         conn = sqlite3.connect('data.db')
         cur = conn.cursor()
         cur.execute("INSERT INTO groups VALUES(?, ?, ?, ?, ?, ?);", (role_id, days, start_time, end_time, voice_chat_id, text_chat_id))
+        conn.commit()
+        conn.close()
+
+    def remove_group(self, role_id: int) -> None:
+        conn = sqlite3.connect('data.db')
+        cur = conn.cursor()
+        cur.execute(f'DELETE from groups WHERE role_id={role_id}')
+        conn.commit()
+        conn.close()
+
+    def remove_all_groups(self) -> None:
+        conn = sqlite3.connect('data.db')
+        cur = conn.cursor()
+        cur.execute(f'DELETE from groups')
         conn.commit()
         conn.close()
     
