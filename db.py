@@ -310,3 +310,10 @@ class SQL():
             'voice_id': working_of[6]
             })
         return data
+
+    def remove_all_working_of(self) -> None:
+        conn = sqlite3.connect('data.db')
+        cur = conn.cursor()
+        cur.execute(f'DELETE from working_of')
+        conn.commit()
+        conn.close()
