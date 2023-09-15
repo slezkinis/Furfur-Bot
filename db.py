@@ -264,10 +264,20 @@ class SQL():
         cur.execute("SELECT * FROM working_of")
         id = len(cur.fetchall()) + 1
         cur = conn.cursor()
-        cur.execute("INSERT INTO working_of VALUES(?, ?, ?, ?, ?, ?, ?);", (id, discord_id, role_id, start_time, end_time, True, voice_id)) # TODO поменять на False
+        cur.execute("INSERT INTO working_of VALUES(?, ?, ?, ?, ?, ?, ?);", (id, discord_id, role_id, start_time, end_time, False, voice_id))
         conn.commit()
         conn.close()
         return id
+
+    def create_working_of_by_sheet(self, discord_id: int, role_id: int, start_time: str, end_time: str, was_visited: bool, voice_id: int) -> int:
+        conn = sqlite3.connect('data.db')
+        cur = conn.cursor()
+        cur.execute("SELECT * FROM working_of")
+        id = len(cur.fetchall()) + 1
+        cur = conn.cursor()
+        cur.execute("INSERT INTO working_of VALUES(?, ?, ?, ?, ?, ?, ?);", (id, discord_id, role_id, start_time, end_time, was_visited, voice_id))
+        conn.commit()
+        conn.close()
 
     def update_working_of_visit(self, db_id: int, is_visit: bool) -> None:
         conn = sqlite3.connect('data.db')

@@ -10,12 +10,14 @@ from scheduler import Scheduler
 import urllib.parse
 
 from db import SQL
+import google_sheet
 
 load_dotenv()
 
 
 db = SQL()
 once_schedule = Scheduler()
+sheet = google_sheet.start_google_sheet()
 
 
 def next_weekday(d, weekday): # Подсчёт даты следующего дня недели
@@ -53,20 +55,20 @@ async def planed_voice_check(channel: discord.TextChannel, guild: discord.Guild,
         student_info = await loop.run_in_executor(None, db.get_student, student.id)
         new_student_skips = student_info['skips'] + 1
         await loop.run_in_executor(None, db.update_student_skips, new_student_skips, student.id)
-        # groups = await loop.run_in_executor(None, db.get_free_groups_for_working_of, student.id)
-        # groups_texts_dates = []
-        # # for group in groups:
-        #     days = group['days'].replace('monday', '0').replace('tuesday', '1').replace('wednesday', '2').replace('thursday', '3').replace('friday', '4').replace('saturday', '5').replace('sunday', '6')
-        #     for index in range(len(days.split(', '))):
-        #         date = next_weekday(datetime.date.today(), int(days.split(', ')[index]))
-        #         moscow_time = f'{int(group["start_time"].split(":")[0]) + 3}:{group["start_time"].split(":")[1]}'
-        #         groups_texts_dates.append((f'{date.strftime("%d.%m")} в {moscow_time}', date))
-        # groups_texts = [f'{num}. {i[0]}' for num, i in enumerate(sorted(groups_texts_dates, key=lambda i: i[1]), 1)]
-        # if groups_texts:
-        #     await student.send('Привет! Ты пропустил занятие, которое сейчас было! Не переживай, этот пропуск можно отработать:) Вот доступные группы:\n{}\nОтработка идёт один час!\nЧтобы зарегистрироваться на отработку напиши: /work_of <Номер группы (смотри сверху)>'.format('\n'.join(groups_texts))) #TODO Добавить к базе данных!
-        # else:
-        #     await student.send('Привет! Ты пропустил занятие, которое сейчас было! Не переживай, этот пропуск можно отработать:) Но к сожалению, сейчас нет доступной группы. Сможешь проверить доступные группы через несколько дней с помощью команды: /check')
-        # await student.send('Привет! Ты пропустил занятие, которое сейчас было! Не переживай, этот пропуск можно отработать:')
+        groups = await loop.run_in_executor(None, db.get_free_groups_for_working_of, student.id)
+        groups_texts_dates = []
+        for group in groups:
+            days = group['days'].replace('monday', '0').replace('tuesday', '1').replace('wednesday', '2').replace('thursday', '3').replace('friday', '4').replace('saturday', '5').replace('sunday', '6')
+            for index in range(len(days.split(', '))):
+                date = next_weekday(datetime.date.today(), int(days.split(', ')[index]))
+                moscow_time = f'{int(group["start_time"].split(":")[0]) + 3}:{group["start_time"].split(":")[1]}'
+                groups_texts_dates.append((f'{date.strftime("%d.%m")} в {moscow_time}', date))
+        groups_texts = [f'{num}. {i[0]}' for num, i in enumerate(sorted(groups_texts_dates, key=lambda i: i[1]), 1)]
+        if groups_texts:
+            await student.send('Привет! Ты пропустил занятие, которое сейчас было! Не переживай, этот пропуск можно отработать:) Вот доступные группы:\n{}\nОтработка идёт один час!\nЧтобы зарегистрироваться на отработку напиши: /work_of <Номер группы (смотри сверху)>'.format('\n'.join(groups_texts))) #TODO Добавить к базе данных!
+        else:
+            await student.send('Привет! Ты пропустил занятие, которое сейчас было! Не переживай, этот пропуск можно отработать:) Но к сожалению, сейчас нет доступной группы. Сможешь проверить доступные группы через несколько дней с помощью команды: /check')
+        await student.send('Привет! Ты пропустил занятие, которое сейчас было! Не переживай, этот пропуск можно отработать:')
 
 
 @repeat(every(10).seconds) # Здесь каждые 10 секунд запускается функция, в которой обновляются данные из дб
@@ -149,21 +151,25 @@ async def remove_role(user: discord.Member, role_id: int): # После окон
 async def start_database():
     await update()
     loop = asyncio.get_event_loop()
-    # all_working_of = await loop.run_in_executor(None, db.get_all_working_of)
-    # now = datetime.datetime.now()
-    # for working_of in all_working_of:
-    #     start_time = datetime.datetime.strptime(working_of['start_time'], '%Y-%m-%d %H:%M:%S')
-    #     end_time = start_time + datetime.timedelta(hours=1)
-    #     if now <= start_time:
-    #         user = bot.get_user(working_of['student_id'])
-    #         once_schedule.once(start_time - datetime.timedelta(minutes=10), lambda user, role_id: asyncio.run_coroutine_threadsafe(get_roles_and_notofication(user, role_id), bot.loop), args=(user, working_of['role_id'], ))
-    #         once_schedule.once(start_time + datetime.timedelta(minutes=15), lambda user, voice_chat_id, db_id: asyncio.run_coroutine_threadsafe(check_members_work_of(user, voice_chat_id, db_id), bot.loop), args=(user, working_of['voice_id'], working_of['id'], )) # TODO
-    #         once_schedule.once(end_time, lambda user, role_id: asyncio.run_coroutine_threadsafe(remove_role(user, role_id), bot.loop), args=(user, working_of['role_id'], ))
+    await upload_working_of_to_scheldue()
     while True:
         await loop.run_in_executor(None, once_schedule.exec_jobs)
         schedule.run_pending()
         await asyncio.sleep(1)
 
+
+async def upload_working_of_to_scheldue():
+    loop = asyncio.get_event_loop()
+    all_working_of = await loop.run_in_executor(None, db.get_all_working_of)
+    now = datetime.datetime.now()
+    for working_of in all_working_of:
+        start_time = datetime.datetime.strptime(working_of['start_time'], '%Y-%m-%d %H:%M:%S')
+        end_time = start_time + datetime.timedelta(hours=1)
+        if now <= start_time:
+            user = bot.get_user(working_of['student_id'])
+            once_schedule.once(start_time - datetime.timedelta(minutes=10), lambda user, role_id: asyncio.run_coroutine_threadsafe(get_roles_and_notofication(user, role_id), bot.loop), args=(user, working_of['role_id'], ))
+            once_schedule.once(start_time + datetime.timedelta(minutes=15), lambda user, voice_chat_id, db_id: asyncio.run_coroutine_threadsafe(check_members_work_of(user, voice_chat_id, db_id), bot.loop), args=(user, working_of['voice_id'], working_of['id'], )) # TODO
+            once_schedule.once(end_time, lambda user, role_id: asyncio.run_coroutine_threadsafe(remove_role(user, role_id), bot.loop), args=(user, working_of['role_id'], ))
 
 SERVER_ID = int(os.getenv('SERVER_ID'))
 ADMIN_ROLE_ID = int(os.getenv('ADMIN_ROLE_ID'))
@@ -217,47 +223,47 @@ async def check_working_of(ctx):
     else:
         await ctx.reply('Привет! Cейчас у тебя вот столько пропусков: {}. Не переживай, их можно отработать:) Но к сожалению, сейчас нет доступной группы. Сможешь проверить доступные группы через несколько дней с помощью команды: /check'.format(user_skips))
 
-# @bot.command(name='work_of') # Для записи на отработку
-# async def add_work_of(ctx, group_number: int = None):
-#     loop = asyncio.get_event_loop()
-#     author = ctx.message.author
-#     guild = bot.get_guild(int(SERVER_ID))
-#     user = guild.get_member(author.id)
-#     try:
-#         student_skips = (await loop.run_in_executor(None, db.get_student, int(author.id)))['skips']
-#     except TypeError:
-#         await ctx.reply('Я не нашёл тебя в своей базе данных. Ты уверен, что ты прописывал команду /reg.')
-#         return
-#     groups = await loop.run_in_executor(None, db.get_free_groups_for_working_of, user.id)
-#     working_of_dates = []
-#     for group in groups:
-#         days = group['days'].replace('monday', '0').replace('tuesday', '1').replace('wednesday', '2').replace('thursday', '3').replace('friday', '4').replace('saturday', '5').replace('sunday', '6')
-#         for index in range(len(days.split(', '))):
-#             date = next_weekday(datetime.datetime.today(), int(days.split(', ')[index]))
-#             working_of_dates.append((group['start_time'], date.strftime('%Y-%m-%d'), group['role_id'], group['voice_chat_id']))
-#     all_working_of = sorted(working_of_dates, key=lambda i: i[1])
-#     if group_number is None:
-#         await ctx.reply('Ты не указал группу для отработки!')
-#         return
-#     if group_number - 1 > len(all_working_of) or group_number < 1:
-#         await ctx.reply('Такой группы не существует')
-#         return
-#     if student_skips == 0:
-#         await ctx.reply('У тебя нет пропусков! Тебе не надо ничего отрабатывать:) Круто:)')
-#         return
-#     selected_working_of = all_working_of[group_number - 1]
-#     start_time = datetime.datetime.strptime(f'{selected_working_of[1]} {selected_working_of[0]}', '%Y-%m-%d %H:%M')
-#     end_time = start_time + datetime.timedelta(hours=1)
-#     id = await loop.run_in_executor(None, db.create_working_of, user.id, selected_working_of[2], start_time, end_time, selected_working_of[3])
-#     once_schedule.once(start_time - datetime.timedelta(minutes=10), lambda user, role_id: asyncio.run_coroutine_threadsafe(get_roles_and_notofication(user, role_id), bot.loop), args=(user, selected_working_of[2], ))
-#     once_schedule.once(start_time + datetime.timedelta(minutes=15), lambda user, voice_chat_id, db_id: asyncio.run_coroutine_threadsafe(check_members_work_of(user, voice_chat_id, db_id), bot.loop), args=(user, selected_working_of[3], id, )) # TODO
-#     once_schedule.once(end_time, lambda user, role_id: asyncio.run_coroutine_threadsafe(remove_role(user, role_id), bot.loop), args=(user, selected_working_of[2], ))
-#     role_name =  guild.get_role(selected_working_of[2]).name
-#     student_info = await loop.run_in_executor(None, db.get_student, user.id)
-#     new_student_skips = student_info['skips'] - 1
-#     await loop.run_in_executor(None, db.update_student_skips, new_student_skips, user.id)
-#     moscow_start_time = start_time + datetime.timedelta(hours=3)
-#     await ctx.reply(f'Всё! Я записал тебя! ***{moscow_start_time.strftime("%d.%m.%Y %H:%M")}*** подключайся к голосовому каналу ***Занятие {role_name}*** (доступ к нему у тебя откроется за 10 минут до начала). Также перед началом я тебе напомню! Прошу не опаздывать!' )
+@bot.command(name='work_of') # Для записи на отработку
+async def add_work_of(ctx, group_number: int = None):
+    loop = asyncio.get_event_loop()
+    author = ctx.message.author
+    guild = bot.get_guild(int(SERVER_ID))
+    user = guild.get_member(author.id)
+    try:
+        student_skips = (await loop.run_in_executor(None, db.get_student, int(author.id)))['skips']
+    except TypeError:
+        await ctx.reply('Я не нашёл тебя в своей базе данных. Ты уверен, что ты прописывал команду /reg.')
+        return
+    groups = await loop.run_in_executor(None, db.get_free_groups_for_working_of, user.id)
+    working_of_dates = []
+    for group in groups:
+        days = group['days'].replace('monday', '0').replace('tuesday', '1').replace('wednesday', '2').replace('thursday', '3').replace('friday', '4').replace('saturday', '5').replace('sunday', '6')
+        for index in range(len(days.split(', '))):
+            date = next_weekday(datetime.datetime.today(), int(days.split(', ')[index]))
+            working_of_dates.append((group['start_time'], date.strftime('%Y-%m-%d'), group['role_id'], group['voice_chat_id']))
+    all_working_of = sorted(working_of_dates, key=lambda i: i[1])
+    if group_number is None:
+        await ctx.reply('Ты не указал группу для отработки!')
+        return
+    if group_number - 1 > len(all_working_of) or group_number < 1:
+        await ctx.reply('Такой группы не существует')
+        return
+    if student_skips == 0:
+        await ctx.reply('У тебя нет пропусков! Тебе не надо ничего отрабатывать:) Круто:)')
+        return
+    selected_working_of = all_working_of[group_number - 1]
+    start_time = datetime.datetime.strptime(f'{selected_working_of[1]} {selected_working_of[0]}', '%Y-%m-%d %H:%M')
+    end_time = start_time + datetime.timedelta(hours=1)
+    id = await loop.run_in_executor(None, db.create_working_of, user.id, selected_working_of[2], start_time, end_time, selected_working_of[3])
+    once_schedule.once(start_time - datetime.timedelta(minutes=10), lambda user, role_id: asyncio.run_coroutine_threadsafe(get_roles_and_notofication(user, role_id), bot.loop), args=(user, selected_working_of[2], ))
+    once_schedule.once(start_time + datetime.timedelta(minutes=15), lambda user, voice_chat_id, db_id: asyncio.run_coroutine_threadsafe(check_members_work_of(user, voice_chat_id, db_id), bot.loop), args=(user, selected_working_of[3], id, )) # TODO
+    once_schedule.once(end_time, lambda user, role_id: asyncio.run_coroutine_threadsafe(remove_role(user, role_id), bot.loop), args=(user, selected_working_of[2], ))
+    role_name =  guild.get_role(selected_working_of[2]).name
+    student_info = await loop.run_in_executor(None, db.get_student, user.id)
+    new_student_skips = student_info['skips'] - 1
+    await loop.run_in_executor(None, db.update_student_skips, new_student_skips, user.id)
+    moscow_start_time = start_time + datetime.timedelta(hours=3)
+    await ctx.reply(f'Всё! Я записал тебя! ***{moscow_start_time.strftime("%d.%m.%Y %H:%M")}*** подключайся к голосовому каналу ***Занятие {role_name}*** (доступ к нему у тебя откроется за 10 минут до начала). Также перед началом я тебе напомню! Прошу не опаздывать!' )
     
 @bot.command(name='echo') # Заглушка! В дальнейшем, можно добавить команду и использовать код
 async def help(ctx):
@@ -334,27 +340,27 @@ async def clear(ctx, amount = 3):
     if ADMIN_ROLE_ID in author_roles:
         await ctx.channel.purge(limit=amount + 1)
     else:
-        await ctx.reply('У Вас нет права на лево! Вообще, по правилам сервера - это бан!:)')
+        await ctx.reply('У Вас нет права на лево!')
         await asyncio.sleep(3)
         await ctx.channel.purge(limit=2)
 
 
-@bot.command()
-async def add(ctx):
-    loop = asyncio.get_running_loop()
-    author = ctx.message.author
-    student_info = await loop.run_in_executor(None, db.get_student, author.id)
-    new_student_skips = student_info['skips'] + 1
-    await loop.run_in_executor(None, db.update_student_skips, new_student_skips, author.id)
+# @bot.command()
+# async def add(ctx):
+#     loop = asyncio.get_running_loop()
+#     author = ctx.message.author
+#     student_info = await loop.run_in_executor(None, db.get_student, author.id)
+#     new_student_skips = student_info['skips'] + 1
+#     await loop.run_in_executor(None, db.update_student_skips, new_student_skips, author.id)
 
 
-@bot.command()
-async def minus(ctx):
-    loop = asyncio.get_running_loop()
-    author = ctx.message.author
-    student_info = await loop.run_in_executor(None, db.get_student, author.id)
-    new_student_skips = student_info['skips'] - 1
-    await loop.run_in_executor(None, db.update_student_skips, new_student_skips, author.id)
+# @bot.command()
+# async def minus(ctx):
+#     loop = asyncio.get_running_loop()
+#     author = ctx.message.author
+#     student_info = await loop.run_in_executor(None, db.get_student, author.id)
+#     new_student_skips = student_info['skips'] - 1
+#     await loop.run_in_executor(None, db.update_student_skips, new_student_skips, author.id)
 
 @bot.command()
 async def help(ctx):
@@ -374,6 +380,56 @@ async def help(ctx):
     except:
         pass
 
+
+@bot.command()
+async def download(ctx):
+    author = ctx.message.author
+    if ctx.channel.guild:
+        author_roles = [role.id for role in author.roles]
+    else:
+        guild = bot.get_guild(int(SERVER_ID))
+        author_roles = [role.id for role in guild.get_member(author.id).roles]
+    if ADMIN_ROLE_ID in author_roles:
+        loop = asyncio.get_running_loop()
+        loop.run_in_executor(None, google_sheet.make_groups_worksheet, sheet)
+        loop.run_in_executor(None, google_sheet.make_students_worksheet, sheet)
+        loop.run_in_executor(None, google_sheet.make_working_off_worksheet, sheet)
+        await ctx.reply('База данных выгружена в Excel!')
+        await asyncio.sleep(3)
+        try:
+            await ctx.channel.purge(limit=2)
+        except:
+            pass
+    else:
+        await ctx.reply('У Вас нет права на лево!')
+        await asyncio.sleep(3)
+        await ctx.channel.purge(limit=2)
+
+
+@bot.command()
+async def upload(ctx):
+    author = ctx.message.author
+    if ctx.channel.guild:
+        author_roles = [role.id for role in author.roles]
+    else:
+        guild = bot.get_guild(int(SERVER_ID))
+        author_roles = [role.id for role in guild.get_member(author.id).roles]
+    if ADMIN_ROLE_ID in author_roles:
+        loop = asyncio.get_running_loop()
+        loop.run_in_executor(None, google_sheet.upload_workings, sheet)
+        loop.run_in_executor(None, google_sheet.upload_group, sheet)
+        loop.run_in_executor(None, google_sheet.upload_student, sheet)
+        await upload_working_of_to_scheldue()
+        await ctx.reply('Данные из Excel загружены в базу!')
+        await asyncio.sleep(3)
+        try:
+            await ctx.channel.purge(limit=2)
+        except:
+            pass
+    else:
+        await ctx.reply('У Вас нет права на лево!')
+        await asyncio.sleep(3)
+        await ctx.channel.purge(limit=2)
 
 def main(): # Главная функция запуска бота
     bot.run(os.getenv('DISCORD_TOKEN'))
