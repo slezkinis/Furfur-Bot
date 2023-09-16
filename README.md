@@ -4,11 +4,12 @@
 
 ### Как установить
 
-1. Создайте файл .env и добавьте токен бота, полученный с сайта [Discord API](https://discord.com/developers/applications). Также добавьте `SERVER_ID` и `ADMIN_ROLE_ID`. Вот пример:
+1. Создайте файл .env и добавьте токен бота, полученный с сайта [Discord API](https://discord.com/developers/applications). Также добавьте `SERVER_ID`, `ADMIN_ROLE_ID` и `GOOGLE_SHEET_TOKEN_PATH` - путь до Gooogle токена. Вот пример:
 ```
 DISCORD_TOKEN=[TOKEN]
 SERVER_ID = 111111111111
 ADMIN_ROLE_ID = 222222222222
+GOOGLE_SHEET_TOKEN_PATH='token.json'
 ```
 
 2. Python3 должен быть уже установлен. 
