@@ -3,6 +3,7 @@ import os
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
+from dotenv import load_dotenv
 
 import warnings
 
@@ -10,6 +11,7 @@ from db import SQL
 
 
 db = SQL()
+load_dotenv()
 warnings.filterwarnings("ignore")
 
 def start_google_sheet():
@@ -28,7 +30,7 @@ def start_google_sheet():
             with open('token.json', 'w') as token:
                 token.write(creds.to_json())
     # Указываем путь к JSON
-    gc = gspread.service_account(filename='mypython-398016-54057ece9503.json')
+    gc = gspread.service_account(filename=os.getenv('GOOGLE_SHEET_TOKEN_PATH'))
     sh = gc.open("Furfur's db")
     return sh
 

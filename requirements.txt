@@ -1,6 +1,6 @@
 discord.py
 python-dotenv
-schedule==1.2.0
-scheduler==0.8.4
+schedule
+scheduler
 disnake
 gspread
