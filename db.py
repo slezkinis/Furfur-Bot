@@ -211,6 +211,21 @@ class SQL():
         conn.close()
         return otv
     
+    def get_group_by_role_id(self, role_id: int) -> dict:
+        conn = sqlite3.connect('data.db')
+        cur = conn.cursor()
+        cur.execute(f"SELECT * FROM groups WHERE role_id = {role_id}")
+        group = cur.fetchone()
+        conn.close()
+        return {
+                'role_id': group[0],
+                'days': group[1],
+                'start_time': group[2],
+                'end_time': group[3],
+                'voice_chat_id': group[4],
+                'channel_id': group[5]
+        }
+    
     def get_groups_where_voice_channel(self, voice_chat_id: int) -> dict:
         conn = sqlite3.connect('data.db')
         cur = conn.cursor()
