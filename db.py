@@ -377,6 +377,6 @@ class SQL():
     def remove_all_skips(self) -> None:
         conn = sqlite3.connect('data.db')
         cur = conn.cursor()
-        cur.execute(f'DELETE from working_of')
+        cur.execute(f'DELETE from skips')
         conn.commit()
         conn.close()
