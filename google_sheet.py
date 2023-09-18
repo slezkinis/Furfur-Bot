@@ -50,9 +50,19 @@ def upload_student(sh):
     students_data = student_worksheet.get_all_values()
     db.remove_all_students()
     for student in students_data[1:]:
-        if student != ['', '', '', '', '']:
-            db.add_student([student[0], student[1], student[2], student[3], student[4]])
+        if student != ['', '', '', '', '', '']:
+            db.add_student([student[0], student[1], student[3], student[4], student[5]])
     make_students_worksheet(sh)
+
+
+def upload_skip(sh):
+    skips_worksheet = sh.worksheet("Пропуски")
+    skips_data = skips_worksheet.get_all_values()
+    db.remove_all_skips()
+    for skip in skips_data[1:]:
+        if skip != ['', '', '', '']:
+            db.add_skip(skip[2], skip[3])
+    make_skips_worksheet(sh)
 
 
 def upload_workings(sh):
@@ -61,7 +71,7 @@ def upload_workings(sh):
     db.remove_all_working_of()
     for working in workings_data[1:]:
         if working != ['', '', '', '', '', '', '']:
-            db.create_working_of_by_sheet(working[1], working[2], working[3], working[4], working[5], working[6])
+            db.create_working_of(working[1], working[2], working[3], working[4], working[6])
     make_working_off_worksheet(sh)
 
 
@@ -81,19 +91,43 @@ def make_groups_worksheet(sh):
     worksheet.format('A1:F1', {'textFormat': {'bold': True}})
 
 
+def make_skips_worksheet(sh):
+    try:
+        worksheet = sh.add_worksheet(title="Пропуски", rows=100, cols=4)
+    except gspread.exceptions.APIError:
+        worksheet = sh.worksheet("Пропуски")
+        worksheet.clear()
+    skips = db.get_all_skips()
+    data = [['ID', 'Ученик', 'ID Ученика', 'Дата пропуска']]
+    if skips:
+        for skip in skips:
+            try:
+                student = db.get_student(skip['student_id'])
+                skip_data = [skip['id'], student['name'], str(skip['student_id']), skip['date_time']]
+            except:
+                skip_data = [skip['id'], 'Ученик не найден', str(skip['student_id']), skip['date_time']]
+            data.append(skip_data)
+    worksheet.update(f'A1:D{len(data)}', data)
+    worksheet.format('A1:D1', {'textFormat': {'bold': True}})
+
+
 def make_students_worksheet(sh):
     students = db.get_all_students()
     try:
-        worksheet = sh.add_worksheet(title="Ученики", rows=100, cols="5")
+        worksheet = sh.add_worksheet(title="Ученики", rows=100, cols="6")
     except gspread.exceptions.APIError:
         worksheet = sh.worksheet("Ученики")
         worksheet.clear()
-    data = [['ID Дискорда', 'Имя', 'ID Дискорд роли', 'Ссылка на DVMN', 'Пропуски']]
+    data = [['ID ученика', 'Имя', 'Группа', 'ID Дискорд роли', 'Ссылка на DVMN', 'Пропуски']]
     for student in students:
-        student_data = [str(student['discord_id']), student['name'], str(student['role_id']), student['dvmn_link'], student['skips']]
+        try:
+            student_group = db.get_group_by_role_id(str(student['role_id']))
+            student_data = [str(student['discord_id']), student['name'], f'{student_group["days"]} {student_group["start_time"]}-{student_group["end_time"]}', str(student['role_id']), student['dvmn_link'], student['skips']]
+        except:
+            student_data = [str(student['discord_id']), student['name'], 'Группа не найдена', str(student['role_id']), student['dvmn_link'], student['skips']]
         data.append(student_data)
-    worksheet.update(f'A1:E{len(data)}', data)
-    worksheet.format('A1:E1', {'textFormat': {'bold': True}})
+    worksheet.update(f'A1:F{len(data)}', data)
+    worksheet.format('A1:F1', {'textFormat': {'bold': True}})
 
 
 def make_working_off_worksheet(sh):

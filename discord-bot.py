@@ -39,22 +39,12 @@ async def planed_voice_check(channel: discord.TextChannel, guild: discord.Guild,
             was_working_of.append(user)
         else:
             was.append(user.name)
-    for member in voice_channel.members:
-        if member.id not in was:
-            try:
-                student_info = await loop.run_in_executor(None, db.get_student, member.id)
-            except:
-                continue
-            if student_info['skips'] > 0:
-                new_student_skips = student_info['skips'] - 1
-            await loop.run_in_executor(None, db.update_student_skips, new_student_skips, member.id)
-            group_info = await loop.run_in_executor(None, db.get_groups_where_voice_channel, int(voice_channel.id))
-            await loop.run_in_executor(None, db.create_working_of, member.id, group_info['role_id'], group_info['start_time'], group_info['end_time'], int(voice_channel.id))
     # await channel.send(f'Сегодня на занятиях были: {", ".join(was)}')
     for student in was_working_of:
         student_info = await loop.run_in_executor(None, db.get_student, student.id)
         new_student_skips = student_info['skips'] + 1
         await loop.run_in_executor(None, db.update_student_skips, new_student_skips, student.id)
+        await loop.run_in_executor(None, db.add_skip, student.id, str(datetime.datetime.now().strftime('%d.%m.%Y')))
         groups = await loop.run_in_executor(None, db.get_free_groups_for_working_of, student.id)
         groups_texts_dates = []
         for group in groups:
@@ -68,7 +58,6 @@ async def planed_voice_check(channel: discord.TextChannel, guild: discord.Guild,
             await student.send('Привет! Ты пропустил занятие, которое сейчас было! Не переживай, этот пропуск можно отработать:) Вот доступные группы:\n{}\nОтработка идёт один час!\nЧтобы зарегистрироваться на отработку напиши: /work_of <Номер группы (смотри сверху)>'.format('\n'.join(groups_texts))) #TODO Добавить к базе данных!
         else:
             await student.send('Привет! Ты пропустил занятие, которое сейчас было! Не переживай, этот пропуск можно отработать:) Но к сожалению, сейчас нет доступной группы. Сможешь проверить доступные группы через несколько дней с помощью команды: /check')
-        await student.send('Привет! Ты пропустил занятие, которое сейчас было! Не переживай, этот пропуск можно отработать:')
 
 
 @repeat(every(10).seconds) # Здесь каждые 10 секунд запускается функция, в которой обновляются данные из дб
@@ -84,7 +73,7 @@ async def update(): # обновляются данные из дб
     for group in groups[:1]:
         group_voice_channel = guild.get_channel(group['voice_chat_id'])
         hour, _ = group['start_time'].split(':')
-        time = ':'.join((hour, '30'))
+        time = '20:18'
         members = await loop.run_in_executor(None, db.get_all_students_for_group, group['role_id'])
         database[group_voice_channel] = {'days': group['days'].split(', '), 'time': time, 'channel_id': group['channel_id'], 'members': [{'name': i['name'], 'id': i['discord_id']} for i in members]}
     schedule.clear('check')
@@ -181,6 +170,7 @@ bot.remove_command('help')
 
 @bot.event
 async def on_ready(): # После запуска бота запускается дб и задаётся статус бота
+    loop = asyncio.get_event_loop()
     await bot.change_presence(status=discord.Status.online, activity=discord.Game('Python 💻(Test)'))
     asyncio.run_coroutine_threadsafe(start_database(), bot.loop)
 
@@ -344,7 +334,27 @@ async def clear(ctx, amount = 3):
         await asyncio.sleep(3)
         await ctx.channel.purge(limit=2)
 
-
+@bot.command() # Функция очистки
+async def clear_skips(ctx):
+    author = ctx.message.author
+    if ctx.channel.guild:
+        author_roles = [role.id for role in author.roles]
+    else:
+        guild = bot.get_guild(int(SERVER_ID))
+        author_roles = [role.id for role in guild.get_member(author.id).roles]
+    if ADMIN_ROLE_ID in author_roles:
+        loop = asyncio.get_running_loop()
+        await loop.run_in_executor(None, db.remove_all_skips)
+        await ctx.reply('Все пропуски удалены из базы данных!')
+        await asyncio.sleep(3)
+        try:
+            await ctx.channel.purge(limit=2)
+        except:
+            pass
+    else:
+        await ctx.reply('У Вас нет права на лево!')
+        await asyncio.sleep(3)
+        await ctx.channel.purge(limit=2)
 # @bot.command()
 # async def add(ctx):
 #     loop = asyncio.get_running_loop()
@@ -394,6 +404,7 @@ async def download(ctx):
         loop.run_in_executor(None, google_sheet.make_groups_worksheet, sheet)
         loop.run_in_executor(None, google_sheet.make_students_worksheet, sheet)
         loop.run_in_executor(None, google_sheet.make_working_off_worksheet, sheet)
+        loop.run_in_executor(None, google_sheet.make_skips_worksheet, sheet)
         await ctx.reply('База данных выгружена в Excel!')
         await asyncio.sleep(3)
         try:
@@ -419,6 +430,7 @@ async def upload(ctx):
         loop.run_in_executor(None, google_sheet.upload_workings, sheet)
         loop.run_in_executor(None, google_sheet.upload_group, sheet)
         loop.run_in_executor(None, google_sheet.upload_student, sheet)
+        loop.run_in_executor(None, google_sheet.upload_skip, sheet)
         await upload_working_of_to_scheldue()
         await ctx.reply('Данные из Excel загружены в базу!')
         await asyncio.sleep(3)
