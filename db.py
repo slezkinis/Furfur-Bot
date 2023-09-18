@@ -37,7 +37,7 @@ class SQL():
         cur.execute("""CREATE TABLE IF NOT EXISTS skips(
         id INT PRIMARY KEY,
         student_id INT,
-        date_time TEXT,
+        date_time TEXT
         );
         """)
         conn.commit()
