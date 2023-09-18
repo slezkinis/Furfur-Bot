@@ -370,7 +370,7 @@ class SQL():
         cur.execute("SELECT * FROM skips")
         id = len(cur.fetchall()) + 1
         cur = conn.cursor()
-        cur.execute("INSERT INTO skips VALUES(?, ?, ?);", id, student_id, date_time)
+        cur.execute("INSERT INTO skips VALUES(?, ?, ?);", (id, student_id, date_time))
         conn.commit()
         conn.close()
 
