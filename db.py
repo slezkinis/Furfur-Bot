@@ -34,6 +34,13 @@ class SQL():
         );
         """)
         conn.commit()
+        cur.execute("""CREATE TABLE IF NOT EXISTS skips(
+        id INT PRIMARY KEY,
+        student_id INT,
+        date_time TEXT,
+        );
+        """)
+        conn.commit()
         # Данные о группах(время в UTC, но надо проверить правильность)
         # cur.execute("INSERT INTO groups VALUES(?, ?, ?, ?, ?, ?);", (1119554223579873310, 'saturday', '09:00', '11:00', 1119555115691548722, 1119555041230069760))
         # conn.commit()
@@ -336,6 +343,38 @@ class SQL():
         return data
 
     def remove_all_working_of(self) -> None:
+        conn = sqlite3.connect('data.db')
+        cur = conn.cursor()
+        cur.execute(f'DELETE from working_of')
+        conn.commit()
+        conn.close()
+    # Skips
+    def get_all_skips(self) -> list:
+        conn = sqlite3.connect('data.db')
+        cur = conn.cursor()
+        cur.execute("SELECT * FROM skips")
+        all_working_of = cur.fetchall()
+        conn.close()
+        data = []
+        for working_of in all_working_of:
+            data.append({
+            'id': working_of[0],
+            'student_id': working_of[1],
+            'date_time': working_of[2],
+            })
+        return data
+
+    def add_skip(self, student_id: int, date_time: str) -> None:
+        conn = sqlite3.connect('data.db')
+        cur = conn.cursor()
+        cur.execute("SELECT * FROM skips")
+        id = len(cur.fetchall()) + 1
+        cur = conn.cursor()
+        cur.execute("INSERT INTO skips VALUES(?, ?, ?);", id, student_id, date_time)
+        conn.commit()
+        conn.close()
+
+    def remove_all_skips(self) -> None:
         conn = sqlite3.connect('data.db')
         cur = conn.cursor()
         cur.execute(f'DELETE from working_of')
