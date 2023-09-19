@@ -73,7 +73,7 @@ async def update(): # обновляются данные из дб
     for group in groups[:1]:
         group_voice_channel = guild.get_channel(group['voice_chat_id'])
         hour, _ = group['start_time'].split(':')
-        time = '20:18'
+        time = ':'.join((hour, '30'))
         members = await loop.run_in_executor(None, db.get_all_students_for_group, group['role_id'])
         database[group_voice_channel] = {'days': group['days'].split(', '), 'time': time, 'channel_id': group['channel_id'], 'members': [{'name': i['name'], 'id': i['discord_id']} for i in members]}
     schedule.clear('check')
