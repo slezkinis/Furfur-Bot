@@ -70,12 +70,17 @@ async def update(): # обновляются данные из дб
     guild = bot.get_guild(int(SERVER_ID))
     groups = await loop.run_in_executor(None, db.get_all_groups)
     database = dict()
-    for group in groups[:1]:
+    for group in groups:
         group_voice_channel = guild.get_channel(group['voice_chat_id'])
         hour, _ = group['start_time'].split(':')
         time = ':'.join((hour, '30'))
         members = await loop.run_in_executor(None, db.get_all_students_for_group, group['role_id'])
-        database[group_voice_channel] = {'days': group['days'].split(', '), 'time': time, 'channel_id': group['channel_id'], 'members': [{'name': i['name'], 'id': i['discord_id']} for i in members]}
+        database_members = []
+        now_week_day = str(datetime.datetime.now().isoweekday()).replace('1', 'monday').replace('2', 'tuesday').replace('3', 'wednesday').replace('4', 'thursday').replace('5', 'friday').replace('6', 'saturday').replace('7', 'sunday')
+        for member in members:
+            if not member['days'] or now_week_day == member['days']:
+                database_members.append({'name': member['name'], 'id': member['discord_id']})
+        database[group_voice_channel] = {'days': group['days'].split(', '), 'time': time, 'channel_id': group['channel_id'], 'members': database_members}
     schedule.clear('check')
     for voice_channel, data in database.items():
         channel = bot.get_channel(data['channel_id'])
@@ -294,7 +299,7 @@ async def reg(ctx, name=None, last_name=None, role_id=None, *, devman_url=None):
     role = guild.get_role(all_groups[int(role_id) - 1])
     user = guild.get_member(author.id)
     await user.add_roles(role)
-    await loop.run_in_executor(None, db.add_student, (author.id, f'{name} {last_name}', role.id, devman_url, 0))
+    await loop.run_in_executor(None, db.add_student, (author.id, f'{name} {last_name}', role.id, devman_url, 0, ''))
     await ctx.reply(f'Теперь ты назначен в группу {role.name}. Проверь, в нашем Discord сервере у тебя должны появится новый текстовый и голосовой каналы. В голосовом будут проходить занятия. Просто подключись к нему за несколько минут до начала. Удачи тебе в обучении и у тебя всё получится:)')
 
 

@@ -8,9 +8,10 @@ class SQL():
         cur.execute("""CREATE TABLE IF NOT EXISTS students(
         discord_id INT,
         name TEXT,
-        role_id INT,
+        role_id TEXT,
         dvmn_link TEXT,
-        skips INT);
+        skips INT,
+        days TEXT);
         """)
         conn.commit()
         cur.execute("""CREATE TABLE IF NOT EXISTS groups(
@@ -75,7 +76,6 @@ class SQL():
         # cur.execute("INSERT INTO groups VALUES(?, ?, ?, ?, ?, ?);", (1132589392079355904, 'saturday, sunday, monday, tuesday, wednesday, thursday, friday', '20:06', '20:08', 1126820305923493888, 1119576448064294972))
         # conn.commit()
         # conn.close()
-
     # Students
     def get_all_students(self) -> list:
         conn = sqlite3.connect('data.db')
@@ -91,7 +91,8 @@ class SQL():
                     'name': student[1],
                     'role_id': student[2],
                     'dvmn_link': student[3],
-                    'skips': student[4]
+                    'skips': student[4],
+                    'days': student[5]
                 }
             )
         return students_data
@@ -108,7 +109,8 @@ class SQL():
                     'name': student[1],
                     'role_id': student[2],
                     'dvmn_link': student[3],
-                    'skips': student[4]
+                    'skips': student[4],
+                    'days': student[5]
         }
 
     def update_student_skips(self, skips: int, discord_id: int) -> None:
@@ -123,7 +125,8 @@ class SQL():
     def get_all_students_for_group(self, role_id: int) -> list:
         conn = sqlite3.connect('data.db')
         cur = conn.cursor()
-        cur.execute(f"SELECT * FROM students where role_id={role_id}")
+        search = f'%{role_id}%'
+        cur.execute(f"SELECT * FROM students where (role_id LIKE '{search}')")
         students = cur.fetchall()
         students_data = []
         conn.close()
@@ -134,7 +137,8 @@ class SQL():
                     'name': student[1],
                     'role_id': student[2],
                     'dvmn_link': student[3],
-                    'skips': student[4]
+                    'skips': student[4],
+                    'days': student[5]
                 }
             )
         return students_data
@@ -150,7 +154,7 @@ class SQL():
     def add_student(self, about_user: list) -> None:
         conn = sqlite3.connect('data.db')
         cur = conn.cursor()
-        cur.execute("INSERT INTO students VALUES(?, ?, ?, ?, ?);", about_user)
+        cur.execute("INSERT INTO students VALUES(?, ?, ?, ?, ?, ?);", about_user)
         conn.commit()
         conn.close()
 
