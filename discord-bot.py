@@ -62,13 +62,9 @@ async def planed_voice_check(channel: discord.TextChannel, guild: discord.Guild,
 
 @repeat(every(10).seconds) # Здесь каждые 10 секунд запускается функция, в которой обновляются данные из дб
 def start_update():
-    
     asyncio.run_coroutine_threadsafe(update(), bot.loop)
-    print('end')
-    print(schedule.jobs)
 
 async def update(): # обновляются данные из дб
-    print('3')
     loop = asyncio.get_event_loop()
     guild = bot.get_guild(int(SERVER_ID))
     groups = await loop.run_in_executor(None, db.get_all_groups)
@@ -104,6 +100,8 @@ async def update(): # обновляются данные из дб
                 schedule.every().saturday.at(data['time']).do(lambda channel, guild, members, voice_channel: asyncio.run_coroutine_threadsafe(planed_voice_check(channel, guild, members, voice_channel), bot.loop), channel, guild, data['members'], voice_channel).tag('check')
             elif date == 'sunday':
                 schedule.every().sunday.at(data['time']).do(lambda channel, guild, members, voice_channel: asyncio.run_coroutine_threadsafe(planed_voice_check(channel, guild, members, voice_channel), bot.loop), channel, guild, data['members'], voice_channel).tag('check')
+
+
 async def get_roles_and_notofication(user: discord.Member, role_id: int): # За 10 минут для отработки бот напоминает и выдаёт роль
     guild = bot.get_guild(int(SERVER_ID))
     role = guild.get_role(role_id)
