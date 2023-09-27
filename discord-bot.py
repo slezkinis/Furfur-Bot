@@ -62,10 +62,13 @@ async def planed_voice_check(channel: discord.TextChannel, guild: discord.Guild,
 
 @repeat(every(10).seconds) # Здесь каждые 10 секунд запускается функция, в которой обновляются данные из дб
 def start_update():
+    
     asyncio.run_coroutine_threadsafe(update(), bot.loop)
-
+    print('end')
+    print(schedule.jobs)
 
 async def update(): # обновляются данные из дб
+    print('3')
     loop = asyncio.get_event_loop()
     guild = bot.get_guild(int(SERVER_ID))
     groups = await loop.run_in_executor(None, db.get_all_groups)
@@ -74,6 +77,8 @@ async def update(): # обновляются данные из дб
         group_voice_channel = guild.get_channel(group['voice_chat_id'])
         hour, _ = group['start_time'].split(':')
         time = ':'.join((hour, '30'))
+        if len(time) != 5:
+            time = '0' + time
         members = await loop.run_in_executor(None, db.get_all_students_for_group, group['role_id'])
         database_members = []
         now_week_day = str(datetime.datetime.now().isoweekday()).replace('1', 'monday').replace('2', 'tuesday').replace('3', 'wednesday').replace('4', 'thursday').replace('5', 'friday').replace('6', 'saturday').replace('7', 'sunday')
@@ -99,8 +104,6 @@ async def update(): # обновляются данные из дб
                 schedule.every().saturday.at(data['time']).do(lambda channel, guild, members, voice_channel: asyncio.run_coroutine_threadsafe(planed_voice_check(channel, guild, members, voice_channel), bot.loop), channel, guild, data['members'], voice_channel).tag('check')
             elif date == 'sunday':
                 schedule.every().sunday.at(data['time']).do(lambda channel, guild, members, voice_channel: asyncio.run_coroutine_threadsafe(planed_voice_check(channel, guild, members, voice_channel), bot.loop), channel, guild, data['members'], voice_channel).tag('check')
-
-
 async def get_roles_and_notofication(user: discord.Member, role_id: int): # За 10 минут для отработки бот напоминает и выдаёт роль
     guild = bot.get_guild(int(SERVER_ID))
     role = guild.get_role(role_id)
@@ -176,7 +179,7 @@ bot.remove_command('help')
 @bot.event
 async def on_ready(): # После запуска бота запускается дб и задаётся статус бота
     loop = asyncio.get_event_loop()
-    await bot.change_presence(status=discord.Status.online, activity=discord.Game('Python 💻(Test)'))
+    await bot.change_presence(status=discord.Status.online, activity=discord.Game('Python 💻'))
     asyncio.run_coroutine_threadsafe(start_database(), bot.loop)
 
 # Временно убрал код для теста бота
