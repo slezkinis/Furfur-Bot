@@ -157,8 +157,9 @@ async def upload_working_of_to_scheldue():
     loop = asyncio.get_event_loop()
     all_working_of = await loop.run_in_executor(None, db.get_all_working_of)
     now = datetime.datetime.now()
+    once_schedule.delete_jobs()
     for working_of in all_working_of:
-        start_time = datetime.datetime.strptime(working_of['start_time'], '%Y-%m-%d %H:%M:%S')
+        start_time = datetime.datetime.strptime(working_of['start_time'], '%Y-%m-%d %H:%M')
         end_time = start_time + datetime.timedelta(hours=1)
         if now <= start_time:
             user = bot.get_user(working_of['student_id'])
@@ -260,7 +261,8 @@ async def add_work_of(ctx, group_number: int = None):
     await loop.run_in_executor(None, db.update_student_skips, new_student_skips, user.id)
     moscow_start_time = start_time + datetime.timedelta(hours=3)
     await ctx.reply(f'Всё! Я записал тебя! ***{moscow_start_time.strftime("%d.%m.%Y %H:%M")}*** подключайся к голосовому каналу ***Занятие {role_name}*** (доступ к нему у тебя откроется за 10 минут до начала). Также перед началом я тебе напомню! Прошу не опаздывать!' )
-    
+ 
+
 @bot.command(name='echo') # Заглушка! В дальнейшем, можно добавить команду и использовать код
 async def help(ctx):
     loop = asyncio.get_running_loop()
