@@ -311,10 +311,10 @@ class SQL():
         conn.commit()
         conn.close()
 
-    def get_working_of_by_discord_id(self, discord_id: int) -> dict:
+    def get_working_of_by_id(self, id: int) -> dict:
         conn = sqlite3.connect('data.db')
         cur = conn.cursor()
-        cur.execute(f"SELECT * FROM working_of WHERE student_id={discord_id}")
+        cur.execute(f"SELECT * FROM working_of WHERE id={id}")
         working_of = cur.fetchone()
         conn.close()
         return {

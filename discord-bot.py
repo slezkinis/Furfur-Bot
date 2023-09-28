@@ -134,12 +134,12 @@ async def check_members_work_of(user: discord.Member, voice_chat_id: int, db_id:
             await user.send('Привет! Ты пропустил занятие, которое сейчас было! Не переживай, этот пропуск можно отработать:) Но к сожалению, сейчас нет доступной группы. Сможешь проверить доступные группы через несколько дней с помощью команды: /check')
 
 
-async def remove_role(user: discord.Member, role_id: int): # После окончания отработки бот забирает роль
+async def remove_role(user: discord.Member, role_id: int, db_id: int): # После окончания отработки бот забирает роль
     loop = asyncio.get_event_loop()
     guild = bot.get_guild(int(SERVER_ID))
     role = guild.get_role(role_id)
     await user.remove_roles(role)
-    work_of = await loop.run_in_executor(None, db.get_working_of_by_discord_id, user.id)
+    work_of = await loop.run_in_executor(None, db.get_working_of_by_id, db_id)
     if work_of['student_visit']:
         await user.send(f'Поздравляю! Ты отработал своё пропущенное занятие! Старйся больше не пропускать!')
 
@@ -165,7 +165,7 @@ async def upload_working_of_to_scheldue():
             user = bot.get_user(working_of['student_id'])
             once_schedule.once(start_time - datetime.timedelta(minutes=10), lambda user, role_id: asyncio.run_coroutine_threadsafe(get_roles_and_notofication(user, role_id), bot.loop), args=(user, working_of['role_id'], ))
             once_schedule.once(start_time + datetime.timedelta(minutes=15), lambda user, voice_chat_id, db_id: asyncio.run_coroutine_threadsafe(check_members_work_of(user, voice_chat_id, db_id), bot.loop), args=(user, working_of['voice_id'], working_of['id'], )) # TODO
-            once_schedule.once(end_time, lambda user, role_id: asyncio.run_coroutine_threadsafe(remove_role(user, role_id), bot.loop), args=(user, working_of['role_id'], ))
+            once_schedule.once(end_time, lambda user, role_id, db_id: asyncio.run_coroutine_threadsafe(remove_role(user, role_id, db_id), bot.loop), args=(user, working_of['role_id'], working_of['id'], ))
 
 SERVER_ID = int(os.getenv('SERVER_ID'))
 ADMIN_ROLE_ID = int(os.getenv('ADMIN_ROLE_ID'))
@@ -254,7 +254,7 @@ async def add_work_of(ctx, group_number: int = None):
     id = await loop.run_in_executor(None, db.create_working_of, user.id, selected_working_of[2], start_time, end_time, selected_working_of[3])
     once_schedule.once(start_time - datetime.timedelta(minutes=10), lambda user, role_id: asyncio.run_coroutine_threadsafe(get_roles_and_notofication(user, role_id), bot.loop), args=(user, selected_working_of[2], ))
     once_schedule.once(start_time + datetime.timedelta(minutes=15), lambda user, voice_chat_id, db_id: asyncio.run_coroutine_threadsafe(check_members_work_of(user, voice_chat_id, db_id), bot.loop), args=(user, selected_working_of[3], id, )) # TODO
-    once_schedule.once(end_time, lambda user, role_id: asyncio.run_coroutine_threadsafe(remove_role(user, role_id), bot.loop), args=(user, selected_working_of[2], ))
+    once_schedule.once(end_time, lambda user, role_id, db_id: asyncio.run_coroutine_threadsafe(remove_role(user, role_id, db_id), bot.loop), args=(user, selected_working_of[2], id, ))
     role_name =  guild.get_role(selected_working_of[2]).name
     student_info = await loop.run_in_executor(None, db.get_student, user.id)
     new_student_skips = student_info['skips'] - 1
