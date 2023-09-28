@@ -159,13 +159,17 @@ async def upload_working_of_to_scheldue():
     now = datetime.datetime.now()
     once_schedule.delete_jobs()
     for working_of in all_working_of:
-        start_time = datetime.datetime.strptime(working_of['start_time'], '%Y-%m-%d %H:%M')
+        try:
+            start_time = datetime.datetime.strptime(working_of['start_time'], '%Y-%m-%d %H:%M:%S')
+        except:
+            start_time = datetime.datetime.strptime(working_of['start_time'], '%Y-%m-%d %H:%M')
         end_time = start_time + datetime.timedelta(hours=1)
         if now <= start_time:
             user = bot.get_user(working_of['student_id'])
             once_schedule.once(start_time - datetime.timedelta(minutes=10), lambda user, role_id: asyncio.run_coroutine_threadsafe(get_roles_and_notofication(user, role_id), bot.loop), args=(user, working_of['role_id'], ))
             once_schedule.once(start_time + datetime.timedelta(minutes=15), lambda user, voice_chat_id, db_id: asyncio.run_coroutine_threadsafe(check_members_work_of(user, voice_chat_id, db_id), bot.loop), args=(user, working_of['voice_id'], working_of['id'], )) # TODO
             once_schedule.once(end_time, lambda user, role_id, db_id: asyncio.run_coroutine_threadsafe(remove_role(user, role_id, db_id), bot.loop), args=(user, working_of['role_id'], working_of['id'], ))
+
 
 SERVER_ID = int(os.getenv('SERVER_ID'))
 ADMIN_ROLE_ID = int(os.getenv('ADMIN_ROLE_ID'))
