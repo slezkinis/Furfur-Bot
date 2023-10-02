@@ -62,7 +62,7 @@ def upload_skip(sh):
     db.remove_all_skips()
     for skip in skips_data[1:]:
         if skip != ['', '', '', '']:
-            db.add_skip(skip[2], skip[3])
+            db.add_skip(str(skip[2]), str(skip[3]))
     make_skips_worksheet(sh)
 
 
@@ -108,9 +108,9 @@ def make_skips_worksheet(sh):
         for skip in skips:
             try:
                 student = db.get_student(skip['student_id'])
-                skip_data = [skip['id'], student['name'], skip['student_id'], skip['date_time']]
+                skip_data = [str(skip['id']), student['name'], str(skip['student_id']), skip['date_time']]
             except:
-                skip_data = [skip['id'], 'Ученик не найден', skip['student_id'], skip['date_time']]
+                skip_data = [str(skip['id']), 'Ученик не найден', str(skip['student_id']), skip['date_time']]
             data.append(skip_data)
     worksheet.update(f'A1:D{len(data)}', data)
     worksheet.format('A1:D1', {'textFormat': {'bold': True}})
