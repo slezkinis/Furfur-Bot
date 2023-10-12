@@ -18,14 +18,13 @@ load_dotenv()
 db = SQL()
 once_schedule = Scheduler()
 sheet = google_sheet.start_google_sheet()
-
+can_work_of = {}
 
 def next_weekday(d, weekday): # Подсчёт даты следующего дня недели
     days_ahead = weekday - d.weekday()
     if days_ahead <= 0:
         days_ahead += 7
     return d + datetime.timedelta(days_ahead)
-
 
 async def planed_voice_check(channel: discord.TextChannel, guild: discord.Guild, members, voice_channel): # Используется для проверки участников в голос. канале (не считая отработок)
     # await channel.send(f'🚨Всем привет! Это проверка! Просьба не отключаться от голосового канала ближайшие пару секунд!🚨')
@@ -54,6 +53,8 @@ async def planed_voice_check(channel: discord.TextChannel, guild: discord.Guild,
                 moscow_time = f'{int(group["start_time"].split(":")[0]) + 3}:{group["start_time"].split(":")[1]}'
                 groups_texts_dates.append((f'{date.strftime("%d.%m")} в {moscow_time}', date))
         groups_texts = [f'{num}. {i[0]}' for num, i in enumerate(sorted(groups_texts_dates, key=lambda i: i[1]), 1)]
+        now = datetime.datetime.now().strftime('%Y-%m-%d %H:%M')
+        can_work_of[student.id] = now
         if groups_texts:
             await student.send('Привет! Ты пропустил занятие, которое сейчас было! Не переживай, этот пропуск можно отработать:) Вот доступные группы:\n{}\nОтработка идёт один час!\nЧтобы зарегистрироваться на отработку напиши: /work_of <Номер группы (смотри сверху)>'.format('\n'.join(groups_texts))) #TODO Добавить к базе данных!
         else:
@@ -62,6 +63,13 @@ async def planed_voice_check(channel: discord.TextChannel, guild: discord.Guild,
 
 @repeat(every(10).seconds) # Здесь каждые 10 секунд запускается функция, в которой обновляются данные из дб
 def start_update():
+    can_work_of2 = can_work_of.copy()
+    for student, time2 in can_work_of2.items():
+        reg_time = datetime.datetime.strptime(time2, '%Y-%m-%d %H:%M')
+        now = datetime.datetime.now()
+        print((datetime.datetime.now() - reg_time) >= datetime.timedelta(seconds=300))
+        if (datetime.datetime.now() - reg_time) >= datetime.timedelta(seconds=300):
+            can_work_of.pop(student)
     asyncio.run_coroutine_threadsafe(update(), bot.loop)
 
 async def update(): # обновляются данные из дб
@@ -128,6 +136,8 @@ async def check_members_work_of(user: discord.Member, voice_chat_id: int, db_id:
                 moscow_time = f'{int(group["start_time"].split(":")[0]) + 3}:{group["start_time"].split(":")[1]}'
                 groups_texts_dates.append((f'{date.strftime("%d.%m")} в {moscow_time}', date))
         groups_texts = [f'{num}. {i[0]}' for num, i in enumerate(sorted(groups_texts_dates, key=lambda i: i[1]), 1)]
+        now = datetime.datetime.now().strftime('%Y-%m-%d %H:%M')
+        can_work_of[user.id] = now
         if groups_texts:
             await user.send('Привет! Ты пропустил занятие, которое сейчас было! Не переживай, этот пропуск можно отработать:) Вот доступные группы:\n{}\nОтработка идёт один час!\nЧтобы зарегистрироваться на отработку напиши: /work_of <Номер группы (смотри сверху)>'.format('\n'.join(groups_texts))) #TODO Добавить к базе данных!
         else:
@@ -219,6 +229,8 @@ async def check_working_of(ctx):
             moscow_time = f'{int(group["start_time"].split(":")[0]) + 3}:{group["start_time"].split(":")[1]}'
             groups_texts_dates.append((f'{date.strftime("%d.%m")} в {moscow_time}', date))
     groups_texts = [f'{num}. {i[0]}' for num, i in enumerate(sorted(groups_texts_dates, key=lambda i: i[1]), 1)]
+    now = datetime.datetime.now().strftime('%Y-%m-%d %H:%M')
+    can_work_of[user.id] = now
     if groups_texts:
         await ctx.reply('Привет! Cейчас у тебя вот столько пропусков: {}. Не переживай, их можно отработать:) Вот доступные группы:\n{}\nОтработка идёт один час!\nЧтобы зарегистрироваться на отработку напиши: /work_of <Номер группы (смотри сверху)>'.format(user_skips, '\n'.join(groups_texts))) #TODO Добавить к базе данных!
     else:
@@ -230,6 +242,9 @@ async def add_work_of(ctx, group_number: int = None):
     author = ctx.message.author
     guild = bot.get_guild(int(SERVER_ID))
     user = guild.get_member(author.id)
+    if user.id not in can_work_of:
+        await ctx.reply("Пока ты думал, возможное время отработок поменялось. Введи команду /check, и заново выбери нужное время для отработки:)")
+        return
     try:
         student_skips = (await loop.run_in_executor(None, db.get_student, int(author.id)))['skips']
     except TypeError:
