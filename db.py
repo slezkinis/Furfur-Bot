@@ -289,7 +289,7 @@ class SQL():
         cur.execute("SELECT * FROM working_of")
         id = len(cur.fetchall()) + 1
         cur = conn.cursor()
-        cur.execute("INSERT INTO working_of VALUES(?, ?, ?, ?, ?, ?, ?);", (id, discord_id, role_id, start_time, end_time, False, voice_id))
+        cur.execute("INSERT INTO working_of VALUES(?, ?, ?, ?, ?, ?, ?);", (id, discord_id, role_id, start_time, end_time, True, voice_id)) # Поменять на True
         conn.commit()
         conn.close()
         return id
